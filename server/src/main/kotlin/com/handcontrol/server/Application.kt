@@ -1,5 +1,6 @@
 package com.handcontrol.server
 
+import com.handcontrol.server.grpc.HandleRequestImpl
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
 import org.springframework.boot.runApplication
