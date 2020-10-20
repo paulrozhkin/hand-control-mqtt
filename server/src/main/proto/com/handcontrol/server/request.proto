@@ -3,7 +3,7 @@ package com.handcontrol.server;
 
 service HandleRequest{
   rpc login(LoginRequest) returns (LoginResult);
-  rpc ProRequest(ClientRequets) returns (ClientReply);
+  rpc ProRequest(ClientRequest) returns (ClientReply);
 }
 message LoginRequest {
   string imei = 1;
@@ -12,17 +12,14 @@ message LoginRequest {
 }
 
 message LoginResult {
-  string imei = 1;
-  string message = 2;
+  string message = 1;
 }
 
-message ClientRequets {
+message ClientRequest {
   string imei = 1;
-  int32 proId = 2;
-  string request = 3;
+  string request = 2;
 }
 
 message ClientReply {
-  string imei = 1;
-  string message = 2;
+  string message = 1;
 }
