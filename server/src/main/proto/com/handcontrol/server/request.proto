@@ -18,7 +18,7 @@ message LoginResult {
 
 message ClientRequets {
   string imei = 1;
-  int32 ProId = 2;
+  int32 proId = 2;
   string request = 3;
 }
 

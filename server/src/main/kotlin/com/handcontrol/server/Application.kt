@@ -9,6 +9,8 @@ import org.springframework.context.annotation.Bean
 @SpringBootApplication(
         exclude = [DataSourceAutoConfiguration::class]
 )
+
+
 open class Application{
     @Bean
     open fun service(): HandleRequestImpl {
