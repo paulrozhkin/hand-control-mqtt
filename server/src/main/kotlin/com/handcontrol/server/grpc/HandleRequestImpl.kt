@@ -1,7 +1,5 @@
-package com.handcontrol.server.grpc
+package com.handcontrol.server
 
-import com.handcontrol.server.HandleRequestGrpc
-import com.handcontrol.server.Request
 import org.lognet.springboot.grpc.GRpcService
 import io.grpc.stub.StreamObserver
 
@@ -14,7 +12,6 @@ class HandleRequestImpl : HandleRequestGrpc.HandleRequestImplBase() {
 
         //sent reply
         val reply = Request.LoginResult.newBuilder().apply {
-            imei = request.imei;
             message = """
                 |Hi there! Your login: '${request.login}', 
 |                               password: '${request.password}'
@@ -24,16 +21,14 @@ class HandleRequestImpl : HandleRequestGrpc.HandleRequestImplBase() {
         responseObserver.onCompleted()
     }
 
-    override fun proRequest(request: Request.ClientRequets, responseObserver: StreamObserver<Request.ClientReply>) {
+    override fun proRequest(request: Request.ClientRequest, responseObserver: StreamObserver<Request.ClientReply>) {
         //save request into database here
 
 
         //sent reply
         val reply = Request.ClientReply.newBuilder().apply {
-            imei = request.imei;
             message = """
-                |Your request is protheses Id: '${request.proId}', 
-|                               request: '${request.request}'
+                |Your request is: '${request.request}'
                 """.trimMargin()
         }.build()
         responseObserver.onNext(reply)
