@@ -1,0 +1,8 @@
+mqqt:
+  broker:
+    url: "192.168.11.64"
+    port: 1883
+
+logging:
+  level:
+    root: info
