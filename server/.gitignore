@@ -1,2 +1,6 @@
 #todo write
-./target
+target
+
+# idea
+*.iml
+.idea
