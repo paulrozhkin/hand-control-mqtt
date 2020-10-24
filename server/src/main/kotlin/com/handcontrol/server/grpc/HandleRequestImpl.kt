@@ -1,5 +1,7 @@
-package com.handcontrol.server
+package com.handcontrol.server.grpc
 
+import com.handcontrol.server.HandleRequestGrpc
+import com.handcontrol.server.Request
 import org.lognet.springboot.grpc.GRpcService
 import io.grpc.stub.StreamObserver
 
@@ -13,7 +15,7 @@ class HandleRequestImpl : HandleRequestGrpc.HandleRequestImplBase() {
         //sent reply
         val reply = Request.LoginResult.newBuilder().apply {
             message = """
-                |Hi there! Your login: '${request.login}', 
+                |Hi there! Your login: '${request.login}',
 |                               password: '${request.password}'
                 """.trimMargin()
         }.build()
