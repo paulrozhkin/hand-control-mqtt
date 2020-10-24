@@ -5,6 +5,7 @@ import org.springframework.data.redis.core.index.Indexed
 
 @RedisHash("Session")
 class Session (
-    @Indexed val imei: String
+    @Indexed val imei: String,
+    val prosthesisId: String
 ){
 }
