@@ -12,6 +12,7 @@
         <kotlin.version>1.4.10</kotlin.version>
         <spring.version>2.3.4.RELEASE</spring.version>
         <spring.security.version>5.3.5.RELEASE</spring.security.version>
+        <vertx.version>3.9.4</vertx.version>
         <kotlin.compiler.jvmTarget>1.8</kotlin.compiler.jvmTarget>
     </properties>
 
@@ -101,11 +102,11 @@
             <version>1.32.1</version>
         </dependency>
 
-        <!-- vertex -->
+        <!-- vertx -->
         <dependency>
             <groupId>io.vertx</groupId>
             <artifactId>vertx-mqtt</artifactId>
-            <version>3.9.4</version>
+            <version>${vertx.version}</version>
         </dependency>
 
     </dependencies>
