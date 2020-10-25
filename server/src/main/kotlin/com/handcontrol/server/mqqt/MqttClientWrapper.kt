@@ -1,7 +1,8 @@
 package com.handcontrol.server.mqqt
 
-import io.vertx.core.buffer.Buffer
-
+/**
+ * Wrap main functions of vertex mqtt client.
+ */
 interface MqttClientWrapper {
     fun connect()
     fun disconnect()

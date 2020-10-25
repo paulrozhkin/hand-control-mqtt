@@ -9,17 +9,9 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import javax.annotation.PostConstruct
 
-/**
- * wrap
- */
 @Service
-class MqttClientWrapperImpl : MqttClientWrapper {
+class MqttClientWrapperImpl(private val mqttProps: MqttProperties) : MqttClientWrapper {
     private val logger = LoggerFactory.getLogger(MqttClientWrapperImpl::class.java)
-
-    // todo make props
-    private var brokerAddr: String = "192.168.1.7"
-    private var brokerPort: Int = 1883
-    private var qosLevel: Int = 0
 
     private val client: MqttClient = MqttClient.create(Vertx.vertx())
 
@@ -36,10 +28,11 @@ class MqttClientWrapperImpl : MqttClientWrapper {
 
     override fun connect() {
         if (client.isConnected) {
+            logger.warn("Client is already connected to broker")
             return
         }
 
-        client.connect(brokerPort, brokerAddr) { ch ->
+        client.connect(mqttProps.brokerPort, mqttProps.brokerAddr) { ch ->
             if (ch.succeeded()) {
                 logger.info("Connected to a mqtt broker")
                 subscribe("hello/world")
@@ -57,7 +50,7 @@ class MqttClientWrapperImpl : MqttClientWrapper {
     }
 
     override fun subscribe(topic: String) {
-        client.subscribe(topic, qosLevel) { ch ->
+        client.subscribe(topic, mqttProps.qosLevel) { ch ->
             if (ch.succeeded()) {
                 logger.info("Subscribe to topic {}", topic)
             } else {
@@ -77,9 +70,8 @@ class MqttClientWrapperImpl : MqttClientWrapper {
     }
 
     override fun publish(topic: String, msg: String) {
-
         client.publish(topic, Buffer.buffer(msg),
-                MqttQoS.valueOf(qosLevel), false, false) { ch ->
+                MqttQoS.valueOf(mqttProps.qosLevel), false, false) { ch ->
             if (ch.succeeded()) {
                 logger.info("Publish msg \"{}\" to topic {}", msg, topic)
             } else {
