@@ -6,9 +6,8 @@ service HandleRequest{
   rpc ProRequest(ClientRequest) returns (ClientReply);
 }
 message LoginRequest {
-  string imei = 1;
-  string login = 2;
-  string password = 3;
+  string login = 1;
+  string password = 2;
 }
 
 message LoginResult {
@@ -16,7 +15,7 @@ message LoginResult {
 }
 
 message ClientRequest {
-  string imei = 1;
+  string token = 1;
   string request = 2;
 }
 
