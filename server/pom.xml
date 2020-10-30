@@ -95,6 +95,11 @@
             </exclusions>
         </dependency>
         <dependency>
+            <groupId>io.github.majusko</groupId>
+            <artifactId>grpc-jwt-spring-boot-starter</artifactId>
+            <version>1.0.7</version>
+        </dependency>
+        <dependency>
             <groupId>io.grpc</groupId>
             <artifactId>grpc-netty-shaded</artifactId>
             <version>1.32.1</version>

@@ -2,17 +2,19 @@ syntax = "proto3";
 package com.handcontrol.server;
 
 service HandleRequest{
-  rpc login(LoginRequest) returns (LoginResult);
-  rpc ProRequest(ClientRequest) returns (ClientReply);
+  rpc login(LoginRequest) returns (LoginResponse);
+  rpc ProRequest(ClientRequest) returns (ClientResponse);
+  rpc registry(LoginRequest) returns (LoginResponse);
 }
+
 message LoginRequest {
   string imei = 1;
   string login = 2;
   string password = 3;
 }
 
-message LoginResult {
-  string message = 1;
+message LoginResponse {
+  string token = 1;
 }
 
 message ClientRequest {
@@ -20,6 +22,6 @@ message ClientRequest {
   string request = 2;
 }
 
-message ClientReply {
+message ClientResponse {
   string message = 1;
 }

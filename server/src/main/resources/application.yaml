@@ -6,3 +6,12 @@ mqtt:
 logging:
   level:
     root: info
+
+spring:
+#  todo change to server configuration
+  datasource:
+    url: jdbc:postgresql://localhost/postgres
+    username: postgres
+    password: password
+  jpa:
+    generate-ddl: true
