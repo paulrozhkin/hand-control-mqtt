@@ -3,7 +3,7 @@ package com.handcontrol.server;
 
 service HandleRequest{
   rpc login(LoginRequest) returns (LoginResponse);
-  rpc ProRequest(ClientRequest) returns (ClientResponse);
+  rpc proRequest(ClientRequest) returns (ClientResponse);
   rpc registry(LoginRequest) returns (LoginResponse);
 }
 
