@@ -8,10 +8,9 @@ logging:
     root: info
 
 spring:
-#  todo change to server configuration
   datasource:
-    url: jdbc:postgresql://localhost/postgres
-    username: postgres
-    password: password
+    url: jdbc:postgresql://localhost:5432/handcontrol_db
+    username: handcontrol_user
+    password: elephant
   jpa:
     generate-ddl: true

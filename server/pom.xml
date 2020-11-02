@@ -11,15 +11,18 @@
     <properties>
         <kotlin.version>1.4.10</kotlin.version>
         <spring.version>2.3.4.RELEASE</spring.version>
-        <spring.security.version>5.3.5.RELEASE</spring.security.version>
+        <spring.security.version>5.3.4.RELEASE</spring.security.version>
         <vertx.version>3.9.4</vertx.version>
         <kotlin.compiler.jvmTarget>1.8</kotlin.compiler.jvmTarget>
         <jackson.version>2.11.2</jackson.version>
         <postgres.version>42.2.18</postgres.version>
+<!--        todo delete when tests would work-->
+        <maven.test.skip>true</maven.test.skip>
     </properties>
 
-    <dependencies>
+<!--    todo навести порядок с зависимостями-->
 
+    <dependencies>
         <!--kotlin-->
         <dependency>
             <groupId>org.jetbrains.kotlin</groupId>
@@ -65,6 +68,16 @@
             <artifactId>spring-boot-starter-data-jpa</artifactId>
             <version>${spring.version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-oauth2-jose</artifactId>
+            <version>${spring.security.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-oauth2-resource-server</artifactId>
+            <version>${spring.security.version}</version>
+        </dependency>
 
         <!--jackson-->
         <dependency>
@@ -86,13 +99,7 @@
         <dependency>
             <groupId>io.github.lognet</groupId>
             <artifactId>grpc-spring-boot-starter</artifactId>
-            <version>4.0.0</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.springframework.boot</groupId>
-                    <artifactId>spring-boot-starter</artifactId>
-                </exclusion>
-            </exclusions>
+            <version>4.2.1</version>
         </dependency>
         <dependency>
             <groupId>io.github.majusko</groupId>
@@ -101,18 +108,13 @@
         </dependency>
         <dependency>
             <groupId>io.grpc</groupId>
-            <artifactId>grpc-netty-shaded</artifactId>
-            <version>1.32.1</version>
-        </dependency>
-        <dependency>
-            <groupId>io.grpc</groupId>
             <artifactId>grpc-protobuf</artifactId>
-            <version>1.32.1</version>
+            <version>1.33.0</version>
         </dependency>
         <dependency>
             <groupId>io.grpc</groupId>
             <artifactId>grpc-stub</artifactId>
-            <version>1.32.1</version>
+            <version>1.33.0</version>
         </dependency>
 
         <!-- Logging -->

@@ -9,12 +9,16 @@ import io.github.majusko.grpc.jwt.data.GrpcJwtContext
 import io.github.majusko.grpc.jwt.service.GrpcRole
 import io.github.majusko.grpc.jwt.service.JwtService
 import io.github.majusko.grpc.jwt.service.dto.JwtData
+import io.grpc.Status
 import org.lognet.springboot.grpc.GRpcService
 import io.grpc.stub.StreamObserver
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 
 @GRpcService
 class HandleRequestImpl(private val jwtService: JwtService, @Autowired val db: CredentialsRepository) : HandleRequestGrpc.HandleRequestImplBase() {
+
+    private val logger = LoggerFactory.getLogger(HandleRequestImpl::class.java)
 
     companion object {
         const val USER = "user"
@@ -22,15 +26,27 @@ class HandleRequestImpl(private val jwtService: JwtService, @Autowired val db: C
 
     @Allow(roles = [GrpcRole.INTERNAL])
     override fun login(request: Request.LoginRequest, responseObserver: StreamObserver<Request.LoginResponse>) {
-        val user = db.findByLogin(request.login)
-        val token: String
-        if (user != null) {
-            val jwtData = JwtData(request.imei, setOf(USER))
-            token = jwtService.generate(jwtData)
-        } else {
-            //todo change
-            token = "error"
+        try {
+            val user = db.findByLogin(request.login)
+            if (user == null) {
+                logger.error("No user in db found with login {}", request.login)
+                responseObserver.onError(Status.PERMISSION_DENIED.asRuntimeException())
+            } else {
+                val pas = user.hash
+                //todo hash
+                if (request.password != pas){
+                    logger.error("User {} entered incorrect password", request.login)
+                    responseObserver.onError(Status.PERMISSION_DENIED.asRuntimeException())
+                }
+            }
+        } catch (e: Exception) {
+            logger.error("Caught error while trying to find user ub db. {}", e.message)
+            responseObserver.onError(Status.PERMISSION_DENIED.asRuntimeException())
         }
+        val token: String
+        val jwtData = JwtData(request.login, setOf(USER))
+        token = jwtService.generate(jwtData)
+
         //todo add redis
         val proto = Request.LoginResponse.newBuilder()
                 .setToken(token)
@@ -43,15 +59,47 @@ class HandleRequestImpl(private val jwtService: JwtService, @Autowired val db: C
     override fun registry(request: Request.LoginRequest, responseObserver: StreamObserver<Request.LoginResponse>) {
         val log = request.login
         val pas = request.password
+        //todo hash
+        logger.info("Trying to register new user {}", log)
+        val user: Credentials?
+        try {
+            user = db.findByLogin(request.login)
+            if (user != null) {
+                responseObserver.onError(Status.ALREADY_EXISTS.asRuntimeException())
+                return
+            }
+        } catch (e: Exception) {
+            logger.error("Caught error while trying to check if user already exists. {}", e.message)
+        }
         val credentials = Credentials(log, pas)
-        db.save(credentials)
-        login(request, responseObserver)
+        try {
+            db.save(credentials)
+            logger.info("User {} saved to db", log)
+        } catch (e: Exception) {
+            logger.error("Caught error while trying to save user to db. {}", e.message)
+            responseObserver.onError(Status.UNKNOWN.asRuntimeException())
+            return
+        }
+        val jwtData = JwtData(log, setOf(USER))
+        val token = jwtService.generate(jwtData)
+        //todo add redis
+        val proto = Request.LoginResponse.newBuilder()
+                .setToken(token)
+                .build()
+        responseObserver.onNext(proto)
+        responseObserver.onCompleted()
+        logger.info("User {} successfully registered", log)
     }
 
     @Allow(roles = [USER])
     override fun proRequest(request: Request.ClientRequest, responseObserver: StreamObserver<Request.ClientResponse>) {
-        //todo send unauthorized instead of throwing exception
-        val auth = GrpcJwtContext.get().orElseThrow { throw Exception("Missing auth data!") }
+        val optional = GrpcJwtContext.get()
+        if (!optional.isPresent) {
+            logger.error("Can't get token")
+            responseObserver.onError(Status.UNAUTHENTICATED.asRuntimeException())
+            return
+        }
+        val auth = optional.get()
         //todo handle request
         val message = Request.ClientResponse.newBuilder()
                 .setMessage("id: " + auth.userId + ". jwt: " + auth.jwt)
