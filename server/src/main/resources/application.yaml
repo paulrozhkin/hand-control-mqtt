@@ -6,3 +6,11 @@ mqtt:
 logging:
   level:
     root: info
+
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/handcontrol_db
+    username: handcontrol_user
+    password: elephant
+  jpa:
+    generate-ddl: true
