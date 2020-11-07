@@ -1,4 +1,4 @@
-package com.handcontrol.server.mqqt
+package com.handcontrol.server.mqtt
 
 import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.boot.context.properties.ConstructorBinding

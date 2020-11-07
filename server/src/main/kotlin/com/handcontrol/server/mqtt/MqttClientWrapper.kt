@@ -1,4 +1,4 @@
-package com.handcontrol.server.mqqt
+package com.handcontrol.server.mqtt
 
 /**
  * Wrap main functions of vertex mqtt client.

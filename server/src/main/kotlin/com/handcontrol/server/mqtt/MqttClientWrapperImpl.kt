@@ -1,4 +1,4 @@
-package com.handcontrol.server.mqqt
+package com.handcontrol.server.mqtt
 
 import io.netty.handler.codec.mqtt.MqttQoS
 import io.vertx.core.Vertx
