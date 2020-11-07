@@ -23,8 +23,7 @@ class HandleRequestImpl(private val jwtService: JwtService, @Autowired val db: C
     companion object {
         const val USER = "user"
     }
-
-    @Allow(roles = [GrpcRole.INTERNAL])
+    
     override fun login(request: Request.LoginRequest, responseObserver: StreamObserver<Request.LoginResponse>) {
         try {
             val user = db.findByLogin(request.login)
@@ -54,8 +53,7 @@ class HandleRequestImpl(private val jwtService: JwtService, @Autowired val db: C
         responseObserver.onNext(proto)
         responseObserver.onCompleted()
     }
-
-    @Allow(roles = [GrpcRole.INTERNAL])
+    
     override fun registry(request: Request.LoginRequest, responseObserver: StreamObserver<Request.LoginResponse>) {
         val log = request.login
         val pas = request.password
