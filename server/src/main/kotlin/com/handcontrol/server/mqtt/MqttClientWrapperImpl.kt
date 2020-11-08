@@ -1,5 +1,6 @@
 package com.handcontrol.server.mqtt
 
+import com.handcontrol.server.mqtt.command.enums.ApiMqttTopic
 import io.netty.handler.codec.mqtt.MqttQoS
 import io.vertx.core.Vertx
 import io.vertx.core.buffer.Buffer
@@ -19,10 +20,12 @@ class MqttClientWrapperImpl(private val mqttProps: MqttProperties) : MqttClientW
     @PostConstruct
     fun init() {
         client.publishHandler { s: MqttPublishMessage ->
-            val message = String(s.payload().bytes)
-            logger.info("Client {} received message with content: \"{}\" from topic {}",
-                    clientId, message, s.topicName())
-            // todo handle it
+            val content = s.payload().bytes
+            val topicName = s.topicName()
+            logger.info("Client {} received message from topic {}", clientId, topicName)
+
+            val contentHandler = ApiMqttTopic.getByName(topicName).getContentHandler()
+            contentHandler.invoke(content)
         }
         connect()
     }
@@ -37,9 +40,7 @@ class MqttClientWrapperImpl(private val mqttProps: MqttProperties) : MqttClientW
             if (ch.succeeded()) {
                 clientId = client.clientId()
                 logger.info("Client {} connected to a mqtt broker", clientId)
-                // todo subscribe to necessary topics
-                subscribe("hello/world")
-                publish("hello/world", "I'm here")
+                ApiMqttTopic.values().forEach { subscribe(it.topicName) }
             } else {
                 logger.error("Client {} failed to connect to a mqtt broker. Reason: {}",
                         clientId, ch.cause().message)
@@ -80,6 +81,7 @@ class MqttClientWrapperImpl(private val mqttProps: MqttProperties) : MqttClientW
         }
     }
 
+    // todo make bytes version
     override fun publish(topic: String, msg: String) {
         client.publish(topic, Buffer.buffer(msg),
                 MqttQoS.valueOf(mqttProps.qosLevel), false, false) { sh ->
