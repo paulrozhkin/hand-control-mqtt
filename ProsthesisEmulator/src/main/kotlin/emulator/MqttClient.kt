@@ -1,6 +1,7 @@
 package emulator
 
 import emulator.models.MqttDataModel
+import emulator.models.Topics
 import io.netty.handler.codec.mqtt.MqttQoS
 import io.reactivex.rxjava3.core.Observable
 import io.reactivex.rxjava3.subjects.PublishSubject
@@ -13,49 +14,57 @@ import org.apache.logging.log4j.Logger
 import java.util.*
 import kotlin.concurrent.timer
 
+@ExperimentalUnsignedTypes
 class MqttClient : io.vertx.core.AbstractVerticle() {
     private companion object {
         const val BROKER_HOST = "localhost"
         const val BROKER_PORT = 1883
+        const val ONLINE_TIMEOUT_MS: Long = 60000
     }
-
-    private val clientId = "HC-"+ UUID.randomUUID()
-
-    private val client: MqttClient = MqttClient.create(
-        Vertx.vertx(),
-        MqttClientOptions()
-            .setUsername("controllers")
-            .setPassword("controllers")
-            .setClientId(clientId)
-            .setWillFlag(true)
-            .setWillQoS(2)
-            .setWillRetain(true)
-            .setWillTopic("controllers/offline")
-            .setWillMessage(clientId)
-    )
 
     private val logger: Logger = LogManager.getLogger(MqttClient::class.java.name)
 
+    private val clientId = UUID.randomUUID().toString()
+
+    private val client: MqttClient = MqttClient.create(
+            Vertx.vertx(),
+            MqttClientOptions()
+                    .setUsername("controllers")
+                    .setPassword("controllers")
+                    .setClientId(clientId)
+                    .setWillFlag(true)
+                    .setWillQoS(2)
+                    .setWillRetain(true)
+                    .setWillTopic(Topics.Offline)
+                    .setWillMessage(clientId)
+    )
+
     /**
-     * Rx PublishSubject для подписки.
+     * Rx PublishSubject for received data.
      */
     private val dataSubject: PublishSubject<MqttDataModel> = PublishSubject.create()
 
     /**
-     * Rx PublishSubject для состояния подключения.
+     * Rx PublishSubject for connection status.
      */
     private val isConnectedSubject: PublishSubject<Boolean> = PublishSubject.create()
 
-    fun getDataObservable() : Observable<MqttDataModel> {
+    /**
+     * Observable for received data.
+     */
+    fun getDataObservable(): Observable<MqttDataModel> {
         return dataSubject.share()
     }
 
-    fun getIsConnectedObservable() : Observable<Boolean> {
+    /**
+     * Observable for connection status.
+     */
+    fun getIsConnectedObservable(): Observable<Boolean> {
         return isConnectedSubject.share()
     }
 
     /**
-     * Выполнить подключение к серверу и подписаться на события Mqtt.
+     * Connect to the broker.
      */
     override fun start() {
 
@@ -64,7 +73,7 @@ class MqttClient : io.vertx.core.AbstractVerticle() {
 
             logger.info("Received message on [${publish.topicName()}], payload [${publish.payload().bytes.size} bytes], QoS [${publish.qosLevel()}]")
 
-            val mqttData = MqttDataModel(publish.topicName(), publish.payload().bytes)
+            val mqttData = MqttDataModel(publish.topicName().removePrefix("$clientId/"), publish.payload().bytes.toUByteArray())
             dataSubject.onNext(mqttData)
         }
 
@@ -86,8 +95,8 @@ class MqttClient : io.vertx.core.AbstractVerticle() {
                 isConnectedSubject.onNext(true)
 
                 // Отправляем сообщения, чтобы эмулятор мог быть обнаружен
-                timer(null, true, 0, 15000) {
-                    sendData("controllers/online", clientId)
+                timer(null, true, 0, ONLINE_TIMEOUT_MS) {
+                    sendData(Topics.SetOnline, clientId, true)
                 }
             } else {
                 logger.error("Failed to connect to a server")
@@ -98,19 +107,31 @@ class MqttClient : io.vertx.core.AbstractVerticle() {
     }
 
     /**
-     * Отправить бинарный поток на topic
+     * Subscribe to MQTT topic.
      */
-    fun sendData(topic: String, data: ByteArray) {
-        val vertxData = Buffer.buffer(data)
-        sendData(topic, vertxData)
+    fun subscribe(topic: String, QoS: Int = 2, topicWithoutId: Boolean = false) {
+        val vertxTopic = getTopic(topic, topicWithoutId)
+        client.subscribe(vertxTopic, QoS)
     }
 
     /**
-     * Отправить текстовое сообщение на топик
+     * Send a binary stream to topic.
      */
-    fun sendData(topic: String, message: String) {
+    fun sendData(topic: String, data: UByteArray, topicWithoutId: Boolean = false) {
+        val vertxTopic = getTopic(topic, topicWithoutId)
+
+        val vertxData = Buffer.buffer(data.toByteArray())
+        sendData(vertxTopic, vertxData)
+    }
+
+    /**
+     * Send a text message to a topic.
+     */
+    fun sendData(topic: String, message: String, topicWithoutId: Boolean = false) {
+        val vertxTopic = getTopic(topic, topicWithoutId)
+
         val vertxData = Buffer.buffer(message)
-        sendData(topic, vertxData)
+        sendData(vertxTopic, vertxData)
     }
 
     private fun sendData(topic: String, vertxData: Buffer) {
@@ -124,6 +145,14 @@ class MqttClient : io.vertx.core.AbstractVerticle() {
             } else {
                 logger.info("Publish sent ${vertxData.bytes.size} bytes to a server on $topic")
             }
+        }
+    }
+
+    private fun getTopic(topic: String, topicWithoutId: Boolean = false): String {
+        return if (!topicWithoutId) {
+            "$clientId/$topic"
+        } else {
+            topic
         }
     }
 }

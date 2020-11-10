@@ -1,7 +1,7 @@
 package emulator.models
 
-class MqttDataModel(topicMqtt: String, dataMqtt: ByteArray) {
+@ExperimentalUnsignedTypes
+class MqttDataModel(topicMqtt: String, dataMqtt: UByteArray) {
     val topic : String = topicMqtt
-    val data : ByteArray = dataMqtt
-
+    val data : UByteArray = dataMqtt
 }
