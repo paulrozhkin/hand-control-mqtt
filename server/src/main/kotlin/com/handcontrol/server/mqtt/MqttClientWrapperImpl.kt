@@ -2,6 +2,7 @@ package com.handcontrol.server.mqtt
 
 import com.handcontrol.server.mqtt.command.enums.ApiMqttDynamicTopic
 import com.handcontrol.server.mqtt.command.enums.ApiMqttStaticTopic
+import com.handcontrol.server.mqtt.command.enums.TopicMode
 import io.netty.handler.codec.mqtt.MqttQoS
 import io.vertx.core.Vertx
 import io.vertx.core.buffer.Buffer
@@ -12,6 +13,7 @@ import org.springframework.stereotype.Service
 import javax.annotation.PostConstruct
 
 @Service
+@ExperimentalUnsignedTypes
 class MqttClientWrapperImpl(private val mqttProps: MqttProperties) : MqttClientWrapper {
     private val logger = LoggerFactory.getLogger(MqttClientWrapperImpl::class.java)
 
@@ -20,6 +22,7 @@ class MqttClientWrapperImpl(private val mqttProps: MqttProperties) : MqttClientW
 
     @PostConstruct
     fun init() {
+        // todo move handler to func and test it
         client.publishHandler { s: MqttPublishMessage ->
             val content = s.payload().bytes
             val topicName = s.topicName()
@@ -27,6 +30,11 @@ class MqttClientWrapperImpl(private val mqttProps: MqttProperties) : MqttClientW
 
             val staticTopic = ApiMqttStaticTopic.getByName(topicName)
             if (staticTopic != null) {
+                if (staticTopic.mode == TopicMode.WRITE) {
+                    logger.warn("Readonly topic {}", topicName)
+                    return@publishHandler
+                }
+
                 val contentHandler = staticTopic.getContentHandler()
                 contentHandler.invoke(content)
                 return@publishHandler
@@ -36,6 +44,11 @@ class MqttClientWrapperImpl(private val mqttProps: MqttProperties) : MqttClientW
             val topicWithRegex = topicName.replaceBefore('/', "+")
             val dynamicTopic = ApiMqttDynamicTopic.getByName(topicWithRegex)
             if (dynamicTopic != null) {
+                if (dynamicTopic.mode == TopicMode.WRITE) {
+                    logger.warn("Readonly topic {}", topicName)
+                    return@publishHandler
+                }
+
                 val contentHandler = dynamicTopic.getContentHandler()
                 contentHandler.invoke(id, content)
                 return@publishHandler

@@ -5,5 +5,5 @@ package com.handcontrol.server.mqtt.command.enums
  */
 enum class TopicMode {
     READ,
-    READWRITE
+    WRITE
 }

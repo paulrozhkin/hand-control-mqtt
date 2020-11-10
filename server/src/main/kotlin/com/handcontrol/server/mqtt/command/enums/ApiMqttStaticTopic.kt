@@ -8,6 +8,7 @@ import com.handcontrol.server.mqtt.command.SetOnline
  *
  * @see <a href="https://github.com/paulrozhkin/handcontrol-documentation/blob/master/api.md">API Description</a>
  */
+@ExperimentalUnsignedTypes
 enum class ApiMqttStaticTopic(val topicName: String, val mode: TopicMode) {
     SET_ONLINE("controllers/online", TopicMode.READ) {
         override fun getContentHandler(): (ByteArray) -> Unit {
