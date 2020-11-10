@@ -2,6 +2,7 @@ package com.handcontrol.server.mqtt.command
 
 import com.handcontrol.server.mqtt.command.dto.Id
 import com.handcontrol.server.mqtt.command.enums.ApiMqttTopic
+import com.handcontrol.server.util.ObjectSerializer
 
 /**
  *  Waiting for prosthesis id -> mark the prosthesis as active.
@@ -13,10 +14,9 @@ object SetOnline : Command(ApiMqttTopic.SET_ONLINE) {
     var pActive = hashMapOf<Id, Boolean>()
 
     override fun handlePayload(byteArray: ByteArray) {
-        val id = String(byteArray)
-
-        println("msg " + id)
-        TODO("Not yet implemented")
+        val key = ObjectSerializer.deserialize<Id>(byteArray)
+        pActive[key] = true
+        //todo add coroutine for change state to false after 60 sec
     }
 
 }

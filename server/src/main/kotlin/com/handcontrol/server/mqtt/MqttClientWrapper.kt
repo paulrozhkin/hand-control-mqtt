@@ -8,5 +8,6 @@ interface MqttClientWrapper {
     fun disconnect()
     fun subscribe(topic: String)
     fun unsubscribe(topic: String)
+    fun publish(topic: String, msgBytes: ByteArray)
     fun publish(topic: String, msg: String)
 }

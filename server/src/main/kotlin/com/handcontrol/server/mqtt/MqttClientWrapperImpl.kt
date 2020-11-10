@@ -81,17 +81,20 @@ class MqttClientWrapperImpl(private val mqttProps: MqttProperties) : MqttClientW
         }
     }
 
-    // todo make bytes version
-    override fun publish(topic: String, msg: String) {
-        client.publish(topic, Buffer.buffer(msg),
+    override fun publish(topic: String, msgBytes: ByteArray) {
+        client.publish(topic, Buffer.buffer(msgBytes),
                 MqttQoS.valueOf(mqttProps.qosLevel), false, false) { sh ->
             if (sh.succeeded()) {
-                logger.info("Client {} published msg \"{}\" to topic {}", clientId, msg, topic)
+                logger.info("Client {} published msg to topic {}", clientId, topic)
             } else {
                 logger.error("Client {} failed to publish msg to topic: {}. Reason: {}",
                         clientId, topic, sh.cause().message)
             }
         }
+    }
+
+    override fun publish(topic: String, msg: String) {
+        publish(topic, msg.toByteArray())
     }
 
 }
