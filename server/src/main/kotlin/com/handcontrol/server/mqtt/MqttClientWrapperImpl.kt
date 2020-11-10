@@ -1,6 +1,7 @@
 package com.handcontrol.server.mqtt
 
-import com.handcontrol.server.mqtt.command.enums.ApiMqttTopic
+import com.handcontrol.server.mqtt.command.enums.ApiMqttDynamicTopic
+import com.handcontrol.server.mqtt.command.enums.ApiMqttStaticTopic
 import io.netty.handler.codec.mqtt.MqttQoS
 import io.vertx.core.Vertx
 import io.vertx.core.buffer.Buffer
@@ -24,8 +25,24 @@ class MqttClientWrapperImpl(private val mqttProps: MqttProperties) : MqttClientW
             val topicName = s.topicName()
             logger.info("Client {} received message from topic {}", clientId, topicName)
 
-            val contentHandler = ApiMqttTopic.getByName(topicName).getContentHandler()
-            contentHandler.invoke(content)
+            val staticTopic = ApiMqttStaticTopic.getByName(topicName)
+            if (staticTopic != null) {
+                val contentHandler = staticTopic.getContentHandler()
+                contentHandler.invoke(content)
+                return@publishHandler
+            }
+
+            val id = topicName.substringBefore('/')
+            val topicWithRegex = topicName.replaceBefore('/', "+")
+            val dynamicTopic = ApiMqttDynamicTopic.getByName(topicWithRegex)
+            if (dynamicTopic != null) {
+                val contentHandler = dynamicTopic.getContentHandler()
+                contentHandler.invoke(id, content)
+                return@publishHandler
+            }
+
+            logger.error("Strange topic {}", topicName)
+            throw IllegalArgumentException()
         }
         connect()
     }
@@ -40,7 +57,8 @@ class MqttClientWrapperImpl(private val mqttProps: MqttProperties) : MqttClientW
             if (ch.succeeded()) {
                 clientId = client.clientId()
                 logger.info("Client {} connected to a mqtt broker", clientId)
-                ApiMqttTopic.values().forEach { subscribe(it.topicName) }
+                ApiMqttStaticTopic.values().forEach { subscribe(it.topicName) }
+                ApiMqttDynamicTopic.values().forEach { subscribe(it.topicName) }
             } else {
                 logger.error("Client {} failed to connect to a mqtt broker. Reason: {}",
                         clientId, ch.cause().message)

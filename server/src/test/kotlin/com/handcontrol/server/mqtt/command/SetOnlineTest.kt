@@ -2,7 +2,8 @@ package com.handcontrol.server.mqtt.command
 
 import com.handcontrol.server.mqtt.MqttClientWrapper
 import com.handcontrol.server.mqtt.command.dto.Id
-import com.handcontrol.server.mqtt.command.enums.ApiMqttTopic.SET_ONLINE
+import com.handcontrol.server.mqtt.command.enums.ApiMqttDynamicTopic.GET_TELEMETRY
+import com.handcontrol.server.mqtt.command.enums.ApiMqttStaticTopic.SET_ONLINE
 import com.handcontrol.server.util.ObjectSerializer
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
@@ -33,6 +34,18 @@ class SetOnlineTest(@Autowired val mqttWrapper: MqttClientWrapper) {
 
         assertTrue(SetOnline.pActive.isNotEmpty())
         assertTrue(p!!)
+    }
+
+
+    @Test
+    @DisplayName("test that correct dynamic send nothing bad happened")
+    fun testCorrectDynamicTopic() {
+        val id = UUID.randomUUID().toString()
+
+        val topic = GET_TELEMETRY.topicName.replace("+", id)
+        mqttWrapper.publish(topic, ObjectSerializer.serialize(Id(id)))
+
+        Thread.sleep(100)
     }
 
 }
