@@ -1,6 +1,6 @@
 package com.handcontrol.server.dao
 
-import com.handcontrol.server.model.Session
+import com.handcontrol.server.entity.Session
 import org.springframework.stereotype.Service
 
 @Service
