@@ -79,6 +79,11 @@
             <artifactId>spring-security-oauth2-resource-server</artifactId>
             <version>${spring.security.version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.springframework.data</groupId>
+            <artifactId>spring-data-redis</artifactId>
+            <version>${spring.version}</version>
+        </dependency>
 
         <!--jackson-->
         <dependency>
@@ -144,6 +149,14 @@
             <groupId>javax.xml.bind</groupId>
             <artifactId>jaxb-api</artifactId>
             <version>${java.xml.version}</version>
+        </dependency>
+
+        <!--redis-->
+        <dependency>
+            <groupId>redis.clients</groupId>
+            <artifactId>jedis</artifactId>
+            <version>3.3.0</version>
+            <type>jar</type>
         </dependency>
     </dependencies>
 
