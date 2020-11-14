@@ -1,0 +1,25 @@
+syntax = "proto3";
+package com.handcontrol.server;
+
+service HandleRequest{
+  rpc login(LoginRequest) returns (LoginResponse);
+  rpc proRequest(ClientRequest) returns (ClientResponse);
+  rpc registry(LoginRequest) returns (LoginResponse);
+}
+
+message LoginRequest {
+  string login = 1;
+  string password = 2;
+}
+
+message LoginResponse {
+  string token = 1;
+}
+
+message ClientRequest {
+  string request = 1;
+}
+
+message ClientResponse {
+  string message = 1;
+}
