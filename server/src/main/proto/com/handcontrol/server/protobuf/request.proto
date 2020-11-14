@@ -1,5 +1,5 @@
 syntax = "proto3";
-package com.handcontrol.server;
+package com.handcontrol.server.protobuf;
 
 service HandleRequest{
   rpc login(LoginRequest) returns (LoginResponse);
