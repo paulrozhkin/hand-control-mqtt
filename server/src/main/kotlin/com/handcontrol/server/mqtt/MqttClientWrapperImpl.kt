@@ -45,8 +45,9 @@ class MqttClientWrapperImpl(private val mqttProps: MqttProperties) : MqttClientW
                 return@publishHandler
             }
 
-            logger.error("Strange topic {}", topicName)
-            throw IllegalArgumentException()
+            val errMsg = String.format("Unknown mqtt topic: %s.", topicName)
+            logger.error(errMsg)
+            throw IllegalArgumentException(errMsg)
         }
         connect()
     }
