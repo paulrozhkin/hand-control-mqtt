@@ -1,5 +1,6 @@
 package com.handcontrol.server.mqtt.command
 
+import com.handcontrol.server.cache.ProsthesisCache
 import com.handcontrol.server.mqtt.MqttClientWrapper
 import com.handcontrol.server.mqtt.command.dto.enums.ModeType
 import com.handcontrol.server.mqtt.command.dto.settings.SetSettingsDto
@@ -24,7 +25,7 @@ class SetOnlineTest(@Autowired val mqttWrapper: MqttClientWrapper) {
 
     @BeforeEach
     fun setUp() {
-        SetOnline.pActive.clear()
+        ProsthesisCache.clear()
     }
 
     @Test
@@ -36,9 +37,8 @@ class SetOnlineTest(@Autowired val mqttWrapper: MqttClientWrapper) {
 
         // need to give a publish handler some time
         Thread.sleep(100)
-        val p = SetOnline.pActive[id]
+        val p = ProsthesisCache.getStateById(id)
 
-        assertTrue(SetOnline.pActive.isNotEmpty())
         assertTrue(p!!)
     }
 
