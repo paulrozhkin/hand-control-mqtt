@@ -1,7 +1,7 @@
 package com.handcontrol.server.grpc
 
-import com.handcontrol.server.HandleRequestGrpc
-import com.handcontrol.server.Request
+import com.handcontrol.server.protobuf.HandleRequestGrpc
+import com.handcontrol.server.protobuf.Request
 
 import io.github.majusko.grpc.jwt.interceptor.AuthClientInterceptor
 import io.grpc.Channel
