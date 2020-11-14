@@ -12,12 +12,13 @@ import org.slf4j.LoggerFactory
  *  Required update every 60 sec, else changed the prosthesis state as inactive.
  */
 @ExperimentalSerializationApi
-object SetOnline : StaticCommand(ApiMqttStaticTopic.SET_ONLINE) {
-    private val logger = LoggerFactory.getLogger(SetOnline::class.java)
+object GetOnline : StaticCommand(ApiMqttStaticTopic.GET_ONLINE) {
+    private val logger = LoggerFactory.getLogger(GetOnline::class.java)
 
     override fun handlePayload(byteArray: ByteArray) {
         val id = ProtobufSerializer.deserialize<String>(byteArray)
         ProsthesisCache.addActiveState(id)
+        // todo move to redis
     }
 
 }

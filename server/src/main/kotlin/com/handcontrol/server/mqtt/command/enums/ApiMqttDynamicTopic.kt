@@ -7,6 +7,7 @@ import com.handcontrol.server.mqtt.command.set.DeleteGesture
 import com.handcontrol.server.mqtt.command.set.PerformGestureById
 import com.handcontrol.server.mqtt.command.set.PerformGestureRaw
 import com.handcontrol.server.mqtt.command.set.SaveGesture
+import com.handcontrol.server.mqtt.command.set.SetPositions
 import com.handcontrol.server.mqtt.command.set.SetSettings
 import kotlinx.serialization.ExperimentalSerializationApi
 
@@ -55,6 +56,11 @@ enum class ApiMqttDynamicTopic(val topicName: String, val mode: TopicMode) {
     PERFORM_GESTURE_RAW("+/action/performGestureRaw", TopicMode.WRITE) {
         override fun getContentHandler(): (String, ByteArray) -> Unit {
             return PerformGestureRaw::handlePayloadAndId
+        }
+    },
+    SET_POSITIONS("+/action/positions", TopicMode.WRITE) {
+        override fun getContentHandler(): (String, ByteArray) -> Unit {
+            return SetPositions::handlePayloadAndId
         }
     };
 

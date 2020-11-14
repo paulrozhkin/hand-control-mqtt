@@ -1,7 +1,7 @@
 package com.handcontrol.server.mqtt.command.enums
 
-import com.handcontrol.server.mqtt.command.set.SetOffline
-import com.handcontrol.server.mqtt.command.set.SetOnline
+import com.handcontrol.server.mqtt.command.set.GetOffline
+import com.handcontrol.server.mqtt.command.set.GetOnline
 import kotlinx.serialization.ExperimentalSerializationApi
 
 /**
@@ -11,14 +11,14 @@ import kotlinx.serialization.ExperimentalSerializationApi
  */
 @ExperimentalSerializationApi
 enum class ApiMqttStaticTopic(val topicName: String, val mode: TopicMode) {
-    SET_ONLINE("controllers/online", TopicMode.READ) {
+    GET_ONLINE("controllers/online", TopicMode.READ) {
         override fun getContentHandler(): (ByteArray) -> Unit {
-            return SetOnline::handlePayload
+            return GetOnline::handlePayload
         }
     },
-    SET_OFFLINE("controllers/offline", TopicMode.READ) {
+    GET_OFFLINE("controllers/offline", TopicMode.READ) {
         override fun getContentHandler(): (ByteArray) -> Unit {
-            return SetOffline::handlePayload
+            return GetOffline::handlePayload
         }
     };
 

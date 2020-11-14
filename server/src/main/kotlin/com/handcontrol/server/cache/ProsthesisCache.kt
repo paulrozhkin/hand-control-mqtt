@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory
 /**
  * Save current state of prosthesis by its id
  */
+// todo move to redis
 object ProsthesisCache {
 
     private val logger = LoggerFactory.getLogger(ProsthesisCache::class.java)

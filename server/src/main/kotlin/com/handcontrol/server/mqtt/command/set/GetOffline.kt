@@ -11,13 +11,14 @@ import org.slf4j.LoggerFactory
  *  Waiting for prosthesis id -> mark the prosthesis as inactive (due to loss of connection).
  */
 @ExperimentalSerializationApi
-object SetOffline : StaticCommand(ApiMqttStaticTopic.SET_OFFLINE) {
-    private val logger = LoggerFactory.getLogger(SetOffline::class.java)
+object GetOffline : StaticCommand(ApiMqttStaticTopic.GET_OFFLINE) {
+    private val logger = LoggerFactory.getLogger(GetOffline::class.java)
 
     override fun handlePayload(byteArray: ByteArray) {
         val id = ProtobufSerializer.deserialize<String>(byteArray)
         logger.debug("Prosthesis {} is lost the connection", id)
         ProsthesisCache.addInactiveState(id)
+        // todo move to redis
     }
 
 }

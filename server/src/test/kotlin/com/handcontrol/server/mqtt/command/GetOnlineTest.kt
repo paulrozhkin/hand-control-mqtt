@@ -5,8 +5,7 @@ import com.handcontrol.server.mqtt.MqttClientWrapper
 import com.handcontrol.server.mqtt.command.dto.enums.ModeType
 import com.handcontrol.server.mqtt.command.dto.settings.SetSettingsDto
 import com.handcontrol.server.mqtt.command.enums.ApiMqttDynamicTopic
-import com.handcontrol.server.mqtt.command.enums.ApiMqttStaticTopic.SET_ONLINE
-import com.handcontrol.server.mqtt.command.set.SetOnline
+import com.handcontrol.server.mqtt.command.enums.ApiMqttStaticTopic.GET_ONLINE
 import com.handcontrol.server.mqtt.command.set.SetSettings
 import com.handcontrol.server.util.ProtobufSerializer
 import kotlinx.serialization.ExperimentalSerializationApi
@@ -21,7 +20,7 @@ import java.util.UUID
 
 @SpringBootTest
 @ExperimentalSerializationApi
-class SetOnlineTest(@Autowired val mqttWrapper: MqttClientWrapper) {
+class GetOnlineTest(@Autowired val mqttWrapper: MqttClientWrapper) {
 
     @BeforeEach
     fun setUp() {
@@ -30,10 +29,10 @@ class SetOnlineTest(@Autowired val mqttWrapper: MqttClientWrapper) {
 
     @Test
     @ExperimentalSerializationApi
-    @DisplayName("test that pActive is not empty after publishing to SetOnline topic")
+    @DisplayName("test that prosthesis cache has an entry after publishing to SetOnline topic")
     fun testSetOnline() {
         val id = UUID.randomUUID().toString()
-        mqttWrapper.publish(SET_ONLINE.topicName, ProtobufSerializer.serialize(id))
+        mqttWrapper.publish(GET_ONLINE.topicName, ProtobufSerializer.serialize(id))
 
         // need to give a publish handler some time
         Thread.sleep(100)

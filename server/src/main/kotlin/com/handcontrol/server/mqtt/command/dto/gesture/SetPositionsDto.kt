@@ -3,7 +3,7 @@ package com.handcontrol.server.mqtt.command.dto.gesture
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class SetPositionDto(
+data class SetPositionsDto(
         val pointerFingerPosition: Byte = 0,
         val middleFingerPosition: Byte = 0,
         val ringFinderPosition: Byte = 0,
