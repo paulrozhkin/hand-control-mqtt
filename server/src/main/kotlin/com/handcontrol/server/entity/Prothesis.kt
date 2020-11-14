@@ -8,5 +8,5 @@ import org.springframework.data.redis.core.index.Indexed
 data class Prothesis (
         @Id @Indexed val id: String,
         var isOnline: Boolean,
-        var settings: Settings
+        val settings: Settings //todo: check if settings load from redis by getProthesis
 )
