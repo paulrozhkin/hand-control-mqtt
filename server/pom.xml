@@ -10,6 +10,7 @@
 
     <properties>
         <kotlin.version>1.4.10</kotlin.version>
+        <serialization.version>1.0.0-RC</serialization.version>
         <spring.version>2.3.4.RELEASE</spring.version>
         <spring.security.version>5.3.4.RELEASE</spring.security.version>
         <vertx.version>3.9.4</vertx.version>
@@ -17,6 +18,8 @@
         <jackson.version>2.11.2</jackson.version>
         <postgres.version>42.2.18</postgres.version>
         <java.xml.version>2.3.1</java.xml.version>
+        <maven.compiler.source>1.8</maven.compiler.source>
+        <maven.compiler.target>1.8</maven.compiler.target>
 <!--        todo delete when tests would work-->
         <maven.test.skip>true</maven.test.skip>
     </properties>
@@ -39,6 +42,11 @@
             <groupId>org.jetbrains.kotlin</groupId>
             <artifactId>kotlin-maven-allopen</artifactId>
             <version>${kotlin.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jetbrains.kotlinx</groupId>
+            <artifactId>kotlinx-serialization-protobuf</artifactId>
+            <version>${serialization.version}</version>
         </dependency>
 
         <!--spring-->
@@ -194,12 +202,18 @@
                     <jvmTarget>1.8</jvmTarget>
                     <compilerPlugins>
                         <plugin>spring</plugin>
+                        <plugin>kotlinx-serialization</plugin>
                     </compilerPlugins>
                 </configuration>
                 <dependencies>
                     <dependency>
                         <groupId>org.jetbrains.kotlin</groupId>
                         <artifactId>kotlin-maven-allopen</artifactId>
+                        <version>${kotlin.version}</version>
+                    </dependency>
+                    <dependency>
+                        <groupId>org.jetbrains.kotlin</groupId>
+                        <artifactId>kotlin-maven-serialization</artifactId>
                         <version>${kotlin.version}</version>
                     </dependency>
                 </dependencies>
