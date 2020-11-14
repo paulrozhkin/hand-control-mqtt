@@ -1,8 +1,8 @@
 package com.handcontrol.server.mqtt.command
 
-import com.handcontrol.server.mqtt.command.dto.Id
 import com.handcontrol.server.mqtt.command.enums.ApiMqttStaticTopic
-import com.handcontrol.server.util.ObjectSerializer
+import com.handcontrol.server.util.ProtobufSerializer
+import kotlinx.serialization.ExperimentalSerializationApi
 import org.slf4j.LoggerFactory
 
 /**
@@ -10,16 +10,17 @@ import org.slf4j.LoggerFactory
  *  Required update every 60 sec, else changed the prosthesis state as inactive.
  */
 @ExperimentalUnsignedTypes
+@ExperimentalSerializationApi
 object SetOnline : StaticCommand(ApiMqttStaticTopic.SET_ONLINE) {
     private val logger = LoggerFactory.getLogger(SetOnline::class.java)
 
     // todo move to more suitable class: id + state
-    var pActive = hashMapOf<Id, Boolean>()
+    var pActive = hashMapOf<String, Boolean>()
 
     override fun handlePayload(byteArray: ByteArray) {
-        val key = ObjectSerializer.deserialize<Id>(byteArray)
+        val key = ProtobufSerializer.deserialize<String>(byteArray)
         pActive[key] = true
-        logger.debug("Prosthesis {} is online", key.id)
+        logger.debug("Prosthesis {} is online", key)
         //todo add coroutine for change state to false after 60 sec
     }
 

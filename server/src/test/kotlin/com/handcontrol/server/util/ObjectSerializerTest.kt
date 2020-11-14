@@ -1,6 +1,5 @@
 package com.handcontrol.server.util
 
-import com.handcontrol.server.mqtt.command.dto.Id
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
@@ -21,7 +20,6 @@ internal class ObjectSerializerTest {
     companion object {
         @JvmStatic
         fun provideObjects() = listOf(
-                Arguments.of(Id("TEMP_STRING")),
                 Arguments.of("TEMP_STRING"),
         )
     }

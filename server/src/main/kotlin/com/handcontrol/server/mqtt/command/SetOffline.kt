@@ -1,24 +1,25 @@
 package com.handcontrol.server.mqtt.command
 
-import com.handcontrol.server.mqtt.command.dto.Id
 import com.handcontrol.server.mqtt.command.enums.ApiMqttStaticTopic
-import com.handcontrol.server.util.ObjectSerializer
+import com.handcontrol.server.util.ProtobufSerializer
+import kotlinx.serialization.ExperimentalSerializationApi
 import org.slf4j.LoggerFactory
 
 /**
  *  Waiting for prosthesis id -> mark the prosthesis as inactive (due to loss of connection).
  */
 @ExperimentalUnsignedTypes
+@ExperimentalSerializationApi
 object SetOffline : StaticCommand(ApiMqttStaticTopic.SET_OFFLINE) {
     private val logger = LoggerFactory.getLogger(SetOffline::class.java)
 
     // todo move to more suitable class: id + state
-    var pActive = hashMapOf<Id, Boolean>()
+    var pActive = hashMapOf<String, Boolean>()
 
     override fun handlePayload(byteArray: ByteArray) {
-        val key = ObjectSerializer.deserialize<Id>(byteArray)
+        val key = ProtobufSerializer.deserialize<String>(byteArray)
         pActive[key] = false
-        logger.debug("Prosthesis {} is offline (connection lost)", key.id)
+        logger.debug("Prosthesis {} is offline (connection lost)", key)
     }
 
 }

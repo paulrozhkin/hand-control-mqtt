@@ -1,15 +1,17 @@
 package com.handcontrol.server.mqtt.command
 
 import com.handcontrol.server.mqtt.MqttClientWrapper
-import com.handcontrol.server.mqtt.command.dto.SetSettingsDto
+import com.handcontrol.server.mqtt.command.dto.settings.SetSettingsDto
 import com.handcontrol.server.mqtt.command.enums.ApiMqttDynamicTopic
-import com.handcontrol.server.util.ObjectSerializer
+import com.handcontrol.server.util.ProtobufSerializer
+import kotlinx.serialization.ExperimentalSerializationApi
 import org.slf4j.LoggerFactory
 
 /**
  * Change prosthesis configuration
  */
 @ExperimentalUnsignedTypes
+@ExperimentalSerializationApi
 object SetSettings : DynamicCommand(ApiMqttDynamicTopic.SET_SETTINGS) {
 
     private val logger = LoggerFactory.getLogger(SetSettings::class.java)
@@ -22,7 +24,7 @@ object SetSettings : DynamicCommand(ApiMqttDynamicTopic.SET_SETTINGS) {
             throw IllegalStateException(errMsg)
         }
 
-        val settings = ObjectSerializer.deserialize<SetSettingsDto>(byteArray)
+        val settings = ProtobufSerializer.deserialize<SetSettingsDto>(byteArray)
         logger.info("Try to send settings to id {}: {}", id, settings)
 
         val topic = topic.topicName.replace("+", id)
