@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+    <property name="log_directory" value="../logs"/>
+    <property name="charset" value="UTF-8"/>
+    <property name="log_size" value="10MB"/>
+    <property name="file_name_pattern_suffix" value=".%d{yyyy-MM-dd}.%i.log.gz"/>
+    <property name="log_pattern"
+            value="%date %green(%level) %yellow([%thread]) %cyan(%logger{10}) [%file : %line] %msg%n"/>
+
+    <appender name="stdout" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>${log_pattern}</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="server-appender" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${log_directory}/server.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${log_directory}/server-${file_name_pattern_suffix}</fileNamePattern>
+            <timeBasedFileNamingAndTriggeringPolicy
+                    class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>${log_size}</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+        </rollingPolicy>
+        <encoder>
+            <charset>${charset}</charset>
+            <pattern>${log_pattern}</pattern>
+        </encoder>
+    </appender>
+
+    <springProfile name="dev">
+        <root level="INFO">
+            <appender-ref ref="stdout"/>
+        </root>
+    </springProfile>
+
+    <springProfile name="default">
+        <root level="INFO">
+            <appender-ref ref="server-appender"/>
+        </root>
+    </springProfile>
+
+</configuration>

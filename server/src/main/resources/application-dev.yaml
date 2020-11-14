@@ -1,0 +1,6 @@
+mqtt:
+  broker-addr: 92.53.124.175
+
+spring:
+  datasource:
+    url: jdbc:postgresql://92.53.124.175:5432/handcontrol_db
