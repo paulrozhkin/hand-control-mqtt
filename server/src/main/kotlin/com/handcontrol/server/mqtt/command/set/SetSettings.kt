@@ -1,6 +1,7 @@
-package com.handcontrol.server.mqtt.command
+package com.handcontrol.server.mqtt.command.set
 
 import com.handcontrol.server.mqtt.MqttClientWrapper
+import com.handcontrol.server.mqtt.command.DynamicCommand
 import com.handcontrol.server.mqtt.command.dto.settings.SetSettingsDto
 import com.handcontrol.server.mqtt.command.enums.ApiMqttDynamicTopic
 import com.handcontrol.server.util.ProtobufSerializer
@@ -10,7 +11,6 @@ import org.slf4j.LoggerFactory
 /**
  * Change prosthesis configuration
  */
-@ExperimentalUnsignedTypes
 @ExperimentalSerializationApi
 object SetSettings : DynamicCommand(ApiMqttDynamicTopic.SET_SETTINGS) {
 

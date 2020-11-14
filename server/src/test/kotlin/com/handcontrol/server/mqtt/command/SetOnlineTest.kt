@@ -5,6 +5,8 @@ import com.handcontrol.server.mqtt.command.dto.enums.ModeType
 import com.handcontrol.server.mqtt.command.dto.settings.SetSettingsDto
 import com.handcontrol.server.mqtt.command.enums.ApiMqttDynamicTopic
 import com.handcontrol.server.mqtt.command.enums.ApiMqttStaticTopic.SET_ONLINE
+import com.handcontrol.server.mqtt.command.set.SetOnline
+import com.handcontrol.server.mqtt.command.set.SetSettings
 import com.handcontrol.server.util.ProtobufSerializer
 import kotlinx.serialization.ExperimentalSerializationApi
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -16,8 +18,8 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import java.util.UUID
 
-@ExperimentalUnsignedTypes
 @SpringBootTest
+@ExperimentalSerializationApi
 class SetOnlineTest(@Autowired val mqttWrapper: MqttClientWrapper) {
 
     @BeforeEach

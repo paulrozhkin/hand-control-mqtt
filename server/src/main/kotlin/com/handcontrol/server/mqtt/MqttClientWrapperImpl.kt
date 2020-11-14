@@ -8,12 +8,13 @@ import io.vertx.core.Vertx
 import io.vertx.core.buffer.Buffer
 import io.vertx.mqtt.MqttClient
 import io.vertx.mqtt.messages.MqttPublishMessage
+import kotlinx.serialization.ExperimentalSerializationApi
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import javax.annotation.PostConstruct
 
 @Service
-@ExperimentalUnsignedTypes
+@ExperimentalSerializationApi
 class MqttClientWrapperImpl(private val mqttProps: MqttProperties) : MqttClientWrapper {
     private val logger = LoggerFactory.getLogger(MqttClientWrapperImpl::class.java)
 
@@ -30,11 +31,6 @@ class MqttClientWrapperImpl(private val mqttProps: MqttProperties) : MqttClientW
 
             val staticTopic = ApiMqttStaticTopic.getByName(topicName)
             if (staticTopic != null) {
-                if (staticTopic.mode == TopicMode.WRITE) {
-                    logger.warn("Readonly topic {}", topicName)
-                    return@publishHandler
-                }
-
                 val contentHandler = staticTopic.getContentHandler()
                 contentHandler.invoke(content)
                 return@publishHandler
@@ -44,11 +40,6 @@ class MqttClientWrapperImpl(private val mqttProps: MqttProperties) : MqttClientW
             val topicWithRegex = topicName.replaceBefore('/', "+")
             val dynamicTopic = ApiMqttDynamicTopic.getByName(topicWithRegex)
             if (dynamicTopic != null) {
-                if (dynamicTopic.mode == TopicMode.WRITE) {
-                    logger.warn("Readonly topic {}", topicName)
-                    return@publishHandler
-                }
-
                 val contentHandler = dynamicTopic.getContentHandler()
                 contentHandler.invoke(id, content)
                 return@publishHandler
@@ -70,8 +61,13 @@ class MqttClientWrapperImpl(private val mqttProps: MqttProperties) : MqttClientW
             if (ch.succeeded()) {
                 clientId = client.clientId()
                 logger.info("Client {} connected to a mqtt broker", clientId)
-                ApiMqttStaticTopic.values().forEach { subscribe(it.topicName) }
-                ApiMqttDynamicTopic.values().forEach { subscribe(it.topicName) }
+                ApiMqttStaticTopic.values()
+                        .filter { it.mode == TopicMode.READ }
+                        .forEach { subscribe(it.topicName) }
+
+                ApiMqttDynamicTopic.values()
+                        .filter { it.mode == TopicMode.READ }
+                        .forEach { subscribe(it.topicName) }
             } else {
                 logger.error("Client {} failed to connect to a mqtt broker. Reason: {}",
                         clientId, ch.cause().message)

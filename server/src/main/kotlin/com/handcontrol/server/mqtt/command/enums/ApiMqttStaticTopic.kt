@@ -1,14 +1,15 @@
 package com.handcontrol.server.mqtt.command.enums
 
-import com.handcontrol.server.mqtt.command.SetOffline
-import com.handcontrol.server.mqtt.command.SetOnline
+import com.handcontrol.server.mqtt.command.set.SetOffline
+import com.handcontrol.server.mqtt.command.set.SetOnline
+import kotlinx.serialization.ExperimentalSerializationApi
 
 /**
  * A prosthesis API as mqtt topics
  *
  * @see <a href="https://github.com/paulrozhkin/handcontrol-documentation/blob/master/api.md">API Description</a>
  */
-@ExperimentalUnsignedTypes
+@ExperimentalSerializationApi
 enum class ApiMqttStaticTopic(val topicName: String, val mode: TopicMode) {
     SET_ONLINE("controllers/online", TopicMode.READ) {
         override fun getContentHandler(): (ByteArray) -> Unit {

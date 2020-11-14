@@ -1,5 +1,6 @@
-package com.handcontrol.server.mqtt.command
+package com.handcontrol.server.mqtt.command.get
 
+import com.handcontrol.server.mqtt.command.DynamicCommand
 import com.handcontrol.server.mqtt.command.dto.TelemetryDto
 import com.handcontrol.server.mqtt.command.enums.ApiMqttDynamicTopic
 import com.handcontrol.server.util.ProtobufSerializer
@@ -11,7 +12,6 @@ import org.slf4j.LoggerFactory
  *  Updates every second
  */
 @ExperimentalSerializationApi
-@ExperimentalUnsignedTypes
 object GetTelemetry : DynamicCommand(ApiMqttDynamicTopic.GET_TELEMETRY) {
     private val logger = LoggerFactory.getLogger(GetTelemetry::class.java)
 
