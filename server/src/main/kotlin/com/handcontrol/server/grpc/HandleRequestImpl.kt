@@ -6,7 +6,6 @@ import com.handcontrol.server.entity.Credentials
 import com.handcontrol.server.repository.CredentialsRepository
 import io.github.majusko.grpc.jwt.annotation.Allow
 import io.github.majusko.grpc.jwt.data.GrpcJwtContext
-import io.github.majusko.grpc.jwt.service.GrpcRole
 import io.github.majusko.grpc.jwt.service.JwtService
 import io.github.majusko.grpc.jwt.service.dto.JwtData
 import io.grpc.Status

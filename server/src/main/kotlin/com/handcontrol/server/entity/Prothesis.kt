@@ -7,5 +7,6 @@ import org.springframework.data.redis.core.index.Indexed
 @RedisHash("Prothesis")
 data class Prothesis (
         @Id @Indexed val id: String,
-        val isOnline: Boolean
+        var isOnline: Boolean,
+        var settings: Settings
 )
