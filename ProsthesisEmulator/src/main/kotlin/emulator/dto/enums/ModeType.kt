@@ -1,4 +1,4 @@
-package emulator.enums
+package emulator.dto.enums
 
 enum class ModeType(val size: Byte) {
     MODE_MIO(0x00),

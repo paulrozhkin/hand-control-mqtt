@@ -1,4 +1,4 @@
-package emulator.enums
+package emulator.dto.enums
 
 enum class ModuleStatusType(val size: Byte) {
     MODULE_STATUS_INITIALIZATION(0x00),

@@ -1,6 +1,6 @@
 package emulator.dto.settings
 
-import emulator.enums.ModeType
+import emulator.dto.enums.ModeType
 import kotlinx.serialization.Serializable
 
 /**

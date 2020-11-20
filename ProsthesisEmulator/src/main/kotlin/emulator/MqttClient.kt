@@ -73,7 +73,7 @@ class MqttClient : io.vertx.core.AbstractVerticle() {
 
             logger.info("Received message on [${publish.topicName()}], payload [${publish.payload().bytes.size} bytes], QoS [${publish.qosLevel()}]")
 
-            val mqttData = MqttDataModel(publish.topicName().removePrefix("$clientId/"), publish.payload().bytes.toUByteArray())
+            val mqttData = MqttDataModel(publish.topicName().removePrefix("$clientId/"), publish.payload().bytes)
             dataSubject.onNext(mqttData)
         }
 
@@ -117,10 +117,10 @@ class MqttClient : io.vertx.core.AbstractVerticle() {
     /**
      * Send a binary stream to topic.
      */
-    fun sendData(topic: String, data: UByteArray, topicWithoutId: Boolean = false) {
+    fun sendData(topic: String, data: ByteArray, topicWithoutId: Boolean = false) {
         val vertxTopic = getTopic(topic, topicWithoutId)
 
-        val vertxData = Buffer.buffer(data.toByteArray())
+        val vertxData = Buffer.buffer(data)
         sendData(vertxTopic, vertxData)
     }
 

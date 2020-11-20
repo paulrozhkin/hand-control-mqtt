@@ -1,4 +1,4 @@
-package emulator.enums
+package emulator.dto.enums
 
 @ExperimentalUnsignedTypes
 enum class DriverStatusType(val size: UByte) {
