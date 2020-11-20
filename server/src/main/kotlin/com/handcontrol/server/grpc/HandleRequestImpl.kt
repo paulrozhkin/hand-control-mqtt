@@ -1,7 +1,7 @@
 package com.handcontrol.server.grpc
 
-import com.handcontrol.server.HandleRequestGrpc
-import com.handcontrol.server.Request
+import com.handcontrol.server.protobuf.HandleRequestGrpc
+import com.handcontrol.server.protobuf.Request
 import com.handcontrol.server.entity.Credentials
 import com.handcontrol.server.repository.CredentialsRepository
 import io.github.majusko.grpc.jwt.annotation.Allow
