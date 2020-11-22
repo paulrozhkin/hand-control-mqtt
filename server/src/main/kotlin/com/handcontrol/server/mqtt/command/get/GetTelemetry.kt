@@ -2,7 +2,7 @@ package com.handcontrol.server.mqtt.command.get
 
 import com.handcontrol.server.mqtt.command.DynamicCommand
 import com.handcontrol.server.mqtt.command.dto.TelemetryDto
-import com.handcontrol.server.mqtt.command.enums.ApiMqttDynamicTopic
+import com.handcontrol.server.mqtt.command.enums.DynamicApi.DynamicTopic.GET_TELEMETRY
 import com.handcontrol.server.util.ProtobufSerializer
 import kotlinx.serialization.ExperimentalSerializationApi
 import org.slf4j.LoggerFactory
@@ -12,7 +12,7 @@ import org.slf4j.LoggerFactory
  *  Updates every second
  */
 @ExperimentalSerializationApi
-object GetTelemetry : DynamicCommand(ApiMqttDynamicTopic.GET_TELEMETRY) {
+object GetTelemetry : DynamicCommand(GET_TELEMETRY) {
     private val logger = LoggerFactory.getLogger(GetTelemetry::class.java)
 
     override fun handlePayloadAndId(id: String, byteArray: ByteArray) {
