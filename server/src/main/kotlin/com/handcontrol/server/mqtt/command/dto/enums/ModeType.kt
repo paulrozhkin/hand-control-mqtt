@@ -1,7 +1,7 @@
 package com.handcontrol.server.mqtt.command.dto.enums
 
-enum class ModeType(val size: Byte) {
-    MODE_MIO(0x00),
-    MODE_COMMANDS(0x01),
-    MODE_AUTO(0x02)
+enum class ModeType {
+    MODE_MIO,
+    MODE_COMMANDS,
+    MODE_AUTO
 }

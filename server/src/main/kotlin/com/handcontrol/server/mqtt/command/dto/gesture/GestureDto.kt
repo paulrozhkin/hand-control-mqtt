@@ -9,6 +9,6 @@ data class GestureDto(
         val name: String = "",
         val lastTimeSync: Long = 0,
         val iterableGesture: Boolean = false,
-        val numberOfGestureRepetitions: Byte = 0,
+        val numberOfGestureRepetitions: Int = 0,
         val listActions: List<GestureActionDto> = emptyList()
 )

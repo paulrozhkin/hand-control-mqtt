@@ -4,9 +4,9 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class SetPositionsDto(
-        val pointerFingerPosition: Byte = 0,
-        val middleFingerPosition: Byte = 0,
-        val ringFinderPosition: Byte = 0,
-        val littleFingerPosition: Byte = 0,
-        val thumbFingerPosition: Byte = 0,
+        val pointerFingerPosition: Int = 0,
+        val middleFingerPosition: Int = 0,
+        val ringFinderPosition: Int = 0,
+        val littleFingerPosition: Int = 0,
+        val thumbFingerPosition: Int = 0,
 )
