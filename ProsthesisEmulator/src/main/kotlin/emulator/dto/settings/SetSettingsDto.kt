@@ -1,6 +1,6 @@
 package emulator.dto.settings
 
-import emulator.enums.ModeType
+import emulator.dto.enums.ModeType
 import kotlinx.serialization.Serializable
 
 /**
@@ -9,7 +9,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class SetSettingsDto(
         val typeWork: ModeType = ModeType.MODE_MIO,
-        val telemetryFrequency: Short = 0,
+        val telemetryFrequency: Int = 0,
         val enableEmg: Boolean = false,
         val enableDisplay: Boolean = false,
         val enableGyro: Boolean = false,
