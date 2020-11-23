@@ -1,6 +1,7 @@
 package com.handcontrol.server.mqtt.command.dto
 
 import com.handcontrol.server.protobuf.Enums
+import com.handcontrol.server.protobuf.Enums.DriverStatusType
 import com.handcontrol.server.protobuf.Enums.ModuleStatusType
 import kotlinx.serialization.Serializable
 
@@ -13,7 +14,7 @@ data class TelemetryDto(
         val emgStatus: ModuleStatusType = ModuleStatusType.MODULE_STATUS_INITIALIZATION,
         val displayStatus: ModuleStatusType = ModuleStatusType.MODULE_STATUS_INITIALIZATION,
         val gyroStatus: ModuleStatusType = ModuleStatusType.MODULE_STATUS_INITIALIZATION,
-        val driverStatus: Enums.DriverStatusType = Enums.DriverStatusType.DRIVER_STATUS_INITIALIZATION,
+        val driverStatus: DriverStatusType = DriverStatusType.DRIVER_STATUS_INITIALIZATION,
         val lastTimeSync: Long = 0,
         val emg: Int = 0,
         val executableGesture: UuidDto = UuidDto(""),

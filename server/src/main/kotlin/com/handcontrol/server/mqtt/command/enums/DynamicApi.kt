@@ -45,9 +45,4 @@ class DynamicApi(val commands: List<DynamicCommand>) {
             }
         }
     }
-
 }
-
-
-
-

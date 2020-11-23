@@ -5,12 +5,14 @@ import com.handcontrol.server.mqtt.command.enums.DynamicApi.DynamicTopic.GET_GES
 import com.handcontrol.server.util.ProtobufSerializer
 import kotlinx.serialization.ExperimentalSerializationApi
 import org.slf4j.LoggerFactory
+import org.springframework.stereotype.Component
 
 /**
  *  Get actual gestures from a prosthesis
  */
+@Component
 @ExperimentalSerializationApi
-object GetGestures : DynamicCommand(GET_GESTURES) {
+class GetGestures : DynamicCommand(GET_GESTURES) {
     private val logger = LoggerFactory.getLogger(GetGestures::class.java)
 
     override fun handlePayloadAndId(id: String, byteArray: ByteArray) {

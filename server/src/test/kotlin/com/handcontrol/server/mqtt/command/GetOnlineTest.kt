@@ -2,25 +2,29 @@ package com.handcontrol.server.mqtt.command
 
 import com.handcontrol.server.cache.ProsthesisCache
 import com.handcontrol.server.mqtt.MqttClientWrapper
-import com.handcontrol.server.mqtt.command.dto.enums.ModeType
-import com.handcontrol.server.mqtt.command.dto.settings.SetSettingsDto
-import com.handcontrol.server.mqtt.command.enums.ApiMqttDynamicTopic
+import com.handcontrol.server.mqtt.command.enums.ApiMqttStaticTopic.GET_OFFLINE
 import com.handcontrol.server.mqtt.command.enums.ApiMqttStaticTopic.GET_ONLINE
 import com.handcontrol.server.mqtt.command.set.SetSettings
-import com.handcontrol.server.util.ProtobufSerializer
+import com.handcontrol.server.protobuf.Enums.ModeType
+import com.handcontrol.server.protobuf.Settings
 import kotlinx.serialization.ExperimentalSerializationApi
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertDoesNotThrow
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.test.context.ActiveProfiles
 import java.util.UUID
 
 @SpringBootTest
+@ActiveProfiles("dev")
 @ExperimentalSerializationApi
 class GetOnlineTest(@Autowired val mqttWrapper: MqttClientWrapper) {
+
+    @Autowired
+    lateinit var setSettingsCommand: SetSettings
 
     @BeforeEach
     fun setUp() {
@@ -28,39 +32,39 @@ class GetOnlineTest(@Autowired val mqttWrapper: MqttClientWrapper) {
     }
 
     @Test
-    @ExperimentalSerializationApi
-    @DisplayName("test that prosthesis cache has an entry after publishing to SetOnline topic")
-    fun testSetOnline() {
+    @DisplayName("cache has an active entry after publishing to GetOnline and inactive after publishing to GetOffline")
+    fun testGetOnlineOffline() {
         val id = UUID.randomUUID().toString()
-        mqttWrapper.publish(GET_ONLINE.topicName, ProtobufSerializer.serialize(id))
+        mqttWrapper.publish(GET_ONLINE.topicName, id)
 
         // need to give a publish handler some time
         Thread.sleep(100)
-        val p = ProsthesisCache.getStateById(id)
+        val active = ProsthesisCache.getStateById(id)
 
-        assertTrue(p!!)
+        assertTrue(active!!)
+
+        mqttWrapper.publish(GET_OFFLINE.topicName, id)
+
+        Thread.sleep(100)
+        val inactive = ProsthesisCache.getStateById(id)
+
+        assertFalse(inactive!!)
     }
 
-
     @Test
-    @ExperimentalSerializationApi
     @DisplayName("run correct dynamic topic with write mode")
     fun runCorrectDynamicTopicWithWriteMode() {
         val id = UUID.randomUUID().toString()
-        val settings = SetSettingsDto(
-                ModeType.MODE_MIO, 1,
-                false, false, false, false
-        )
+        val grpcSettings = Settings.SetSettings.newBuilder()
+                .setEnableDisplay(true)
+                .setEnableDriver(false)
+                .setEnableEmg(true)
+                .setEnableGyro(false)
+                .setTelemetryFrequency(55)
+                .setTypeWork(ModeType.MODE_AUTO)
+                .build()
 
-        SetSettings.mqttWrapper = mqttWrapper
-        val topic = ApiMqttDynamicTopic.SET_SETTINGS.topicName.replace("+", id)
-
-
-        assertDoesNotThrow {
-            ApiMqttDynamicTopic.SET_SETTINGS.getContentHandler()
-                .invoke(id, ProtobufSerializer.serialize(settings)) }
+        setSettingsCommand.writeToProsthesis(id, grpcSettings)
+        // todo mock mqttWrpapper and check sending
     }
-
-
-
 }
