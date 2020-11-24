@@ -9,6 +9,7 @@ import com.handcontrol.server.protobuf.Settings
 import com.handcontrol.server.util.ProtobufSerializer
 import kotlinx.serialization.ExperimentalSerializationApi
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 
 /**
@@ -16,10 +17,11 @@ import org.springframework.stereotype.Component
  */
 @Component
 @ExperimentalSerializationApi
-class SetSettings(val mqttWrapper: MqttClientWrapper) :
-        DynamicCommand(SET_SETTINGS), MobileWriteApi<Settings.SetSettings> {
-
+class SetSettings : DynamicCommand(SET_SETTINGS), MobileWriteApi<Settings.SetSettings> {
     private val logger = LoggerFactory.getLogger(SetSettings::class.java)
+
+    @Autowired
+    private lateinit var mqttWrapper: MqttClientWrapper
 
     override fun handlePayloadAndId(id: String, byteArray: ByteArray) {
         TODO("Not yet implemented")

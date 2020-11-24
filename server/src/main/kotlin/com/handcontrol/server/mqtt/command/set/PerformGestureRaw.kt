@@ -9,6 +9,7 @@ import com.handcontrol.server.protobuf.Gestures
 import com.handcontrol.server.util.ProtobufSerializer
 import kotlinx.serialization.ExperimentalSerializationApi
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 
 /**
@@ -16,10 +17,12 @@ import org.springframework.stereotype.Component
  */
 @Component
 @ExperimentalSerializationApi
-class PerformGestureRaw(val mqttWrapper: MqttClientWrapper) :
+class PerformGestureRaw :
         DynamicCommand(PERFORM_GESTURE_RAW), MobileWriteApi<Gestures.PerformGestureRaw> {
-
     private val logger = LoggerFactory.getLogger(PerformGestureRaw::class.java)
+
+    @Autowired
+    private lateinit var mqttWrapper: MqttClientWrapper
 
     override fun handlePayloadAndId(id: String, byteArray: ByteArray) {
         TODO("Not yet implemented")

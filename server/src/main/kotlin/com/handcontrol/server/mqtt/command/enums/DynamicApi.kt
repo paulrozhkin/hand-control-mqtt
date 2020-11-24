@@ -3,6 +3,7 @@ package com.handcontrol.server.mqtt.command.enums
 import com.handcontrol.server.mqtt.command.DynamicCommand
 import kotlinx.serialization.ExperimentalSerializationApi
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 
 /**
@@ -12,9 +13,12 @@ import org.springframework.stereotype.Service
  */
 @Service
 @ExperimentalSerializationApi
-class DynamicApi(val commands: List<DynamicCommand>) {
+class DynamicApi {
 
     private val logger = LoggerFactory.getLogger(DynamicApi::class.java)
+
+    @Autowired
+    lateinit var commands: List<DynamicCommand>
 
     fun handle(topicName: String, id: String, payload: ByteArray) {
         val topic = DynamicTopic.getByName(topicName)
