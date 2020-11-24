@@ -2,32 +2,34 @@ package com.handcontrol.server.mqtt.command.set
 
 import com.handcontrol.server.mqtt.MqttClientWrapper
 import com.handcontrol.server.mqtt.command.DynamicCommand
+import com.handcontrol.server.mqtt.command.MobileWriteApi
 import com.handcontrol.server.mqtt.command.dto.gesture.DeleteGestureDto
-import com.handcontrol.server.mqtt.command.enums.ApiMqttDynamicTopic
+import com.handcontrol.server.mqtt.command.enums.DynamicApi.DynamicTopic.DELETE_GESTURE
+import com.handcontrol.server.protobuf.Gestures
 import com.handcontrol.server.util.ProtobufSerializer
 import kotlinx.serialization.ExperimentalSerializationApi
 import org.slf4j.LoggerFactory
+import org.springframework.stereotype.Component
 
 /**
  * Delete a gesture
  */
+@Component
 @ExperimentalSerializationApi
-object DeleteGesture : DynamicCommand(ApiMqttDynamicTopic.DELETE_GESTURE) {
+class DeleteGesture(val mqttWrapper: MqttClientWrapper) :
+        DynamicCommand(DELETE_GESTURE), MobileWriteApi<Gestures.DeleteGesture> {
 
     private val logger = LoggerFactory.getLogger(DeleteGesture::class.java)
-    lateinit var mqttWrapper: MqttClientWrapper
 
-    // todo all write commands have the same function -> move to util
     override fun handlePayloadAndId(id: String, byteArray: ByteArray) {
-        if (!this::mqttWrapper.isInitialized) {
-            val errMsg = "MqttWrapper should be initialized"
-            logger.error(errMsg)
-            throw IllegalStateException(errMsg)
-        }
+        TODO("Not yet implemented")
+    }
 
-        val deleteGesture = ProtobufSerializer.deserialize<DeleteGestureDto>(byteArray)
-        logger.info("Try to send DeleteGesture to id {}: {}", id, deleteGesture)
+    override fun writeToProsthesis(id: String, grpcObj: Gestures.DeleteGesture) {
+        val dto = DeleteGestureDto.createFrom(grpcObj)
+        logger.info("Try to send DeleteGesture to id {}: {}", id, dto)
 
+        val byteArray = ProtobufSerializer.serialize(dto)
         val topic = topic.topicName.replace("+", id)
         mqttWrapper.publish(topic, byteArray)
     }
