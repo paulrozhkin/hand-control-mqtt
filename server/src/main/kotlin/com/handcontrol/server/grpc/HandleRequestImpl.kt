@@ -1,6 +1,8 @@
 package com.handcontrol.server.grpc
 
 import com.handcontrol.server.entity.Credentials
+import com.handcontrol.server.mqtt.command.MobileWriteApi
+import com.handcontrol.server.mqtt.command.set.*
 import com.handcontrol.server.protobuf.*
 import com.handcontrol.server.repository.CredentialsRepository
 import io.github.majusko.grpc.jwt.annotation.Allow
@@ -10,10 +12,9 @@ import io.grpc.Status
 import io.grpc.stub.StreamObserver
 import org.lognet.springboot.grpc.GRpcService
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Autowired
 
 @GRpcService
-class HandleRequestImpl(private val jwtService: JwtService, @Autowired val db: CredentialsRepository) : HandleRequestGrpc.HandleRequestImplBase() {
+class HandleRequestImpl(private val jwtService: JwtService, private val db: CredentialsRepository, val lst: List<MobileWriteApi<*>>) : HandleRequestGrpc.HandleRequestImplBase() {
 
     private val logger = LoggerFactory.getLogger(HandleRequestImpl::class.java)
 
@@ -22,6 +23,7 @@ class HandleRequestImpl(private val jwtService: JwtService, @Autowired val db: C
     }
 
     //todo add everywhere checks for token - prosthesis
+    //todo change when to validate() method
 
     override fun login(request: Request.LoginRequest, responseObserver: StreamObserver<Request.LoginResponse>) {
         try {
@@ -99,9 +101,19 @@ class HandleRequestImpl(private val jwtService: JwtService, @Autowired val db: C
     @Allow(roles = [USER])
     override fun setOffline(request: Request.setOfflineRequest?, responseObserver: StreamObserver<Request.setOfflineResponse>?) {
         //todo redis
-        if (false) {
-            //unsuccessful
-            responseObserver?.onError(Status.CANCELLED.asRuntimeException())
+        val id = request?.id
+        when {
+            id == null -> {
+                responseObserver?.onError(Status.INVALID_ARGUMENT.asRuntimeException())
+                //unsuccessful
+                //todo no such id
+            }
+            id == "error" -> {
+                responseObserver?.onError(Status.CANCELLED.asRuntimeException())
+            }
+            checkRights(id) -> {
+                responseObserver?.onError(Status.PERMISSION_DENIED.asRuntimeException())
+            }
         }
         val message = Request.setOfflineResponse.newBuilder().build()
         responseObserver?.onNext(message)
@@ -112,8 +124,17 @@ class HandleRequestImpl(private val jwtService: JwtService, @Autowired val db: C
     override fun getSettings(request: Request.getSettingsRequest?, responseObserver: StreamObserver<Request.getSettingsResponse>?) {
         val id = request?.id
         //todo find settings from redis, handle if no
-        if (false) {
-            responseObserver?.onError(Status.NOT_FOUND.asRuntimeException())
+        when {
+            id == null -> {
+                responseObserver?.onError(Status.INVALID_ARGUMENT.asRuntimeException())
+            }
+            id == "error" -> {
+                //todo no such id
+                responseObserver?.onError(Status.NOT_FOUND.asRuntimeException())
+            }
+            checkRights(id) -> {
+                responseObserver?.onError(Status.PERMISSION_DENIED.asRuntimeException())
+            }
         }
         val settings = Settings.GetSettings.newBuilder()
         settings.enableDisplay = true
@@ -130,10 +151,22 @@ class HandleRequestImpl(private val jwtService: JwtService, @Autowired val db: C
     override fun setSettings(request: Request.setSettingsRequest?, responseObserver: StreamObserver<Request.setSettingsResponse>?) {
         val id = request?.id
         val s = request?.settings
-        if (id == null || s == null) {
-            responseObserver?.onError(Status.INVALID_ARGUMENT.asRuntimeException())
+        when {
+            id == null || s == null -> {
+                responseObserver?.onError(Status.INVALID_ARGUMENT.asRuntimeException())
+            }
+            id == "error" -> {
+                //todo no such id
+                responseObserver?.onError(Status.NOT_FOUND.asRuntimeException())
+            }
+            checkRights(id) -> {
+                responseObserver?.onError(Status.PERMISSION_DENIED.asRuntimeException())
+            }
         }
         //todo add mqtt and redis
+        val command = lst.find { it is SetSettings } as MobileWriteApi<Settings.SetSettings>
+        command.writeToProsthesis(id!!, s!!)
+        //todo do we need getSettings?
         val settings = Settings.GetSettings.newBuilder()
         settings.enableDisplay = true
         settings.enableDriver = true
@@ -143,13 +176,23 @@ class HandleRequestImpl(private val jwtService: JwtService, @Autowired val db: C
         val message = Request.setSettingsResponse.newBuilder().setSettings(settings).build()
         responseObserver?.onNext(message)
         responseObserver?.onCompleted()
+
     }
 
     @Allow(roles = [USER])
     override fun getGestures(request: Request.getGesturesRequest?, responseObserver: StreamObserver<Request.getGesturesResponse>?) {
         val id = request?.id
-        if (id == null) {
-            responseObserver?.onError(Status.INVALID_ARGUMENT.asRuntimeException())
+        when {
+            id == null -> {
+                responseObserver?.onError(Status.INVALID_ARGUMENT.asRuntimeException())
+            }
+            id == "error" -> {
+                //todo no such id
+                responseObserver?.onError(Status.NOT_FOUND.asRuntimeException())
+            }
+            checkRights(id) -> {
+                responseObserver?.onError(Status.PERMISSION_DENIED.asRuntimeException())
+            }
         }
         //todo add redis
         val uuid = Uuid.UUID.newBuilder()
@@ -180,9 +223,23 @@ class HandleRequestImpl(private val jwtService: JwtService, @Autowired val db: C
         val gesture = request?.gesture
         val id = request?.id
         val time = request?.timeSync
-        if (gesture == null || id == null || time == null) {
-            responseObserver?.onError(Status.INVALID_ARGUMENT.asRuntimeException())
+        when {
+            id == null || gesture == null || time == null -> {
+                responseObserver?.onError(Status.INVALID_ARGUMENT.asRuntimeException())
+            }
+            id == "error" -> {
+                //todo no such id
+                responseObserver?.onError(Status.NOT_FOUND.asRuntimeException())
+            }
+            checkRights(id) -> {
+                responseObserver?.onError(Status.PERMISSION_DENIED.asRuntimeException())
+            }
         }
+        val saveGesture = Gestures.SaveGesture.newBuilder()
+        saveGesture.timeSync = time!!
+        saveGesture.gesture = gesture
+        val command = lst.find { it is SaveGesture } as MobileWriteApi<Gestures.SaveGesture>
+        command.writeToProsthesis(id!!, saveGesture.build())
         //todo add mqtt
         //todo telemetry
         val message = Request.saveGestureResponse.newBuilder().build()
@@ -195,9 +252,28 @@ class HandleRequestImpl(private val jwtService: JwtService, @Autowired val db: C
         val id = request?.id
         val gestureId = request?.gestureId
         val time = request?.timeSync
-        if (gestureId == null || id == null || time == null) {
-            responseObserver?.onError(Status.INVALID_ARGUMENT.asRuntimeException())
+        when {
+            id == null || gestureId == null || time == null -> {
+                responseObserver?.onError(Status.INVALID_ARGUMENT.asRuntimeException())
+            }
+            id == "error" -> {
+                //todo no such id
+                responseObserver?.onError(Status.NOT_FOUND.asRuntimeException())
+            }
+            checkRights(id) -> {
+                responseObserver?.onError(Status.PERMISSION_DENIED.asRuntimeException())
+            }
+            //todo change
+            gestureId == Uuid.UUID.newBuilder().setValue("error").build() -> {
+                responseObserver?.onError(Status.NOT_FOUND.asRuntimeException())
+            }
         }
+        val deleteGesture = Gestures.DeleteGesture.newBuilder()
+        deleteGesture.timeSync = time!!
+        deleteGesture.id = gestureId
+        val command = lst.find { it is DeleteGesture } as MobileWriteApi<Gestures.DeleteGesture>
+        command.writeToProsthesis(id!!, deleteGesture.build())
+
         //todo add mqtt
         //todo telemetry
         val message = Request.deleteGestureResponse.newBuilder().build()
@@ -209,9 +285,27 @@ class HandleRequestImpl(private val jwtService: JwtService, @Autowired val db: C
     override fun performGestureId(request: Request.performGestureIdRequest?, responseObserver: StreamObserver<Request.performGestureIdResponse>?) {
         val id = request?.id
         val gestureId = request?.gestureId
-        if (gestureId == null || id == null) {
-            responseObserver?.onError(Status.INVALID_ARGUMENT.asRuntimeException())
+        when {
+            id == null || gestureId == null -> {
+                responseObserver?.onError(Status.INVALID_ARGUMENT.asRuntimeException())
+            }
+            id == "error" -> {
+                //todo no such id
+                responseObserver?.onError(Status.NOT_FOUND.asRuntimeException())
+            }
+            checkRights(id) -> {
+                responseObserver?.onError(Status.PERMISSION_DENIED.asRuntimeException())
+            }
+            //todo change
+            gestureId == Uuid.UUID.newBuilder().setValue("error").build() -> {
+                responseObserver?.onError(Status.NOT_FOUND.asRuntimeException())
+            }
         }
+        val performGestureById = Gestures.PerformGestureById.newBuilder()
+        performGestureById.id = gestureId
+        val command = lst.find { it is PerformGestureById } as MobileWriteApi<Gestures.PerformGestureById>
+        command.writeToProsthesis(id!!, performGestureById.build())
+
         //todo add mqtt
         val message = Request.performGestureIdResponse.newBuilder().build()
         responseObserver?.onNext(message)
@@ -222,9 +316,22 @@ class HandleRequestImpl(private val jwtService: JwtService, @Autowired val db: C
     override fun performGestureRaw(request: Request.performGestureRawRequest?, responseObserver: StreamObserver<Request.performGestureRawResponse>?) {
         val id = request?.id
         val gesture = request?.gesture
-        if (gesture == null || id == null) {
-            responseObserver?.onError(Status.INVALID_ARGUMENT.asRuntimeException())
+        when {
+            id == null || gesture == null -> {
+                responseObserver?.onError(Status.INVALID_ARGUMENT.asRuntimeException())
+            }
+            id == "error" -> {
+                //todo no such id
+                responseObserver?.onError(Status.NOT_FOUND.asRuntimeException())
+            }
+            checkRights(id) -> {
+                responseObserver?.onError(Status.PERMISSION_DENIED.asRuntimeException())
+            }
         }
+        val performGestureRaw = Gestures.PerformGestureRaw.newBuilder()
+        performGestureRaw.gesture = gesture
+        val command = lst.find { it is PerformGestureRaw } as MobileWriteApi<Gestures.PerformGestureRaw>
+        command.writeToProsthesis(id!!, performGestureRaw.build())
         //todo add mqtt
         val message = Request.performGestureRawResponse.newBuilder().build()
         responseObserver?.onNext(message)
@@ -239,18 +346,38 @@ class HandleRequestImpl(private val jwtService: JwtService, @Autowired val db: C
         val ringPosition = request?.ringFingerPosition
         val littlePosition = request?.littleFingerPosition
         val thumbPosition = request?.thumbFingerPosition
-        if (id == null
-                || pointerPosition == null
-                || middlePosition == null
-                || ringPosition == null
-                || littlePosition == null
-                || thumbPosition == null
-        ) {
-            responseObserver?.onError(Status.INVALID_ARGUMENT.asRuntimeException())
+        when {
+            id == null || pointerPosition == null
+                    || middlePosition == null
+                    || ringPosition == null
+                    || littlePosition == null
+                    || thumbPosition == null -> {
+                responseObserver?.onError(Status.INVALID_ARGUMENT.asRuntimeException())
+            }
+            id == "error" -> {
+                //todo no such id
+                responseObserver?.onError(Status.NOT_FOUND.asRuntimeException())
+            }
+            checkRights(id) -> {
+                responseObserver?.onError(Status.PERMISSION_DENIED.asRuntimeException())
+            }
         }
-        //todo add mqtt
+        //todo handle mqtt
+        val setPositions = Gestures.SetPositions.newBuilder()
+        setPositions.pointerFingerPosition = pointerPosition!!
+        setPositions.middleFingerPosition = middlePosition!!
+        setPositions.ringFingerPosition = ringPosition!!
+        setPositions.littleFingerPosition = littlePosition!!
+        setPositions.thumbFingerPosition = thumbPosition!!
+        val command = lst.find { it is SetPositions } as MobileWriteApi<Gestures.SetPositions>
+        command.writeToProsthesis(id!!, setPositions.build())
         val message = Request.setPositionsResponse.newBuilder().build()
         responseObserver?.onNext(message)
         responseObserver?.onCompleted()
+    }
+
+    private fun checkRights(id: String): Boolean {
+        //todo implement
+        return id == "norights"
     }
 }
