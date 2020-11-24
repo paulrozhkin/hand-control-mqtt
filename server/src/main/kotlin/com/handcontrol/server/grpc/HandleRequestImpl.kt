@@ -12,11 +12,15 @@ import io.grpc.Status
 import io.grpc.stub.StreamObserver
 import org.lognet.springboot.grpc.GRpcService
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Autowired
 
 @GRpcService
-class HandleRequestImpl(private val jwtService: JwtService, private val db: CredentialsRepository, val lst: List<MobileWriteApi<*>>) : HandleRequestGrpc.HandleRequestImplBase() {
+class HandleRequestImpl(private val jwtService: JwtService, private val db: CredentialsRepository) : HandleRequestGrpc.HandleRequestImplBase() {
 
     private val logger = LoggerFactory.getLogger(HandleRequestImpl::class.java)
+
+    @Autowired
+    private lateinit var lst: List<MobileWriteApi<*>>
 
     companion object {
         const val USER = "user"
