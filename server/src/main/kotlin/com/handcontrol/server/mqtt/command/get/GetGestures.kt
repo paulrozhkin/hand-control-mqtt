@@ -1,6 +1,7 @@
 package com.handcontrol.server.mqtt.command.get
 
 import com.handcontrol.server.mqtt.command.DynamicCommand
+import com.handcontrol.server.mqtt.command.dto.gesture.GetGesturesDto
 import com.handcontrol.server.mqtt.command.enums.DynamicApi.DynamicTopic.GET_GESTURES
 import com.handcontrol.server.util.ProtobufSerializer
 import kotlinx.serialization.ExperimentalSerializationApi
@@ -16,7 +17,7 @@ class GetGestures : DynamicCommand(GET_GESTURES) {
     private val logger = LoggerFactory.getLogger(GetGestures::class.java)
 
     override fun handlePayloadAndId(id: String, byteArray: ByteArray) {
-        val gestures = ProtobufSerializer.deserialize<GetGestures>(byteArray)
+        val gestures = ProtobufSerializer.deserialize<GetGesturesDto>(byteArray)
         logger.debug("Get gestures from {}: {}", id, gestures)
         // todo save it?
     }
