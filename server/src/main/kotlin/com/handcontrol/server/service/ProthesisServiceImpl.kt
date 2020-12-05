@@ -25,4 +25,21 @@ class ProthesisServiceImpl(val repository: ProthesisRepository) : ProthesisServi
     override fun deleteOffline() {
         repository.deleteAllByOnline(false)
     }
+
+    override fun setOffline(id: String): Prothesis {
+        val prothesis: Prothesis = repository.findById(id).get()
+        prothesis.isOnline = false
+        return repository.save(prothesis)
+    }
+
+    override fun isOnline(id: String): Boolean {
+        return repository.findById(id).get().isOnline
+    }
+
+    override fun changeProthesis(prothesis: Prothesis, id: String): Prothesis {
+        val prothesisNew: Prothesis = repository.findById(id).get()
+        repository.save(prothesis)
+        return prothesisNew
+    }
+
 }

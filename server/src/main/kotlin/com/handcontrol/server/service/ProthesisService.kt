@@ -15,4 +15,10 @@ interface ProthesisService {
     fun delete(id: String)
 
     fun deleteOffline()
+
+    fun setOffline(id: String): Prothesis
+
+    fun isOnline(id: String): Boolean
+
+    fun changeProthesis(prothesis: Prothesis, id: String): Prothesis
 }
