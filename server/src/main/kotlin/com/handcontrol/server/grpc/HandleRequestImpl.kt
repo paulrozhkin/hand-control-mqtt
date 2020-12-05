@@ -98,11 +98,37 @@ class HandleRequestImpl(private val jwtService: JwtService, @Autowired val db: C
             return
         }
         val auth = optional.get()
-        //todo handle request
+
+        //todo: send request message to MQTT
+
         val message = Request.ClientResponse.newBuilder()
                 .setMessage("id: " + auth.userId + ". jwt: " + auth.jwt)
                 .build()
         responseObserver.onNext(message)
+        responseObserver.onCompleted()
+    }
+
+    // Demo: send data each 2000ms
+    @Allow(roles = [USER])
+    override fun proUpdate(request: Request.SubscribeRequest, responseObserver: StreamObserver<Request.ProStatus>) {
+        val optional = GrpcJwtContext.get()
+        if (!optional.isPresent) {
+            logger.error("Can't get token")
+            responseObserver.onError(Status.UNAUTHENTICATED.asRuntimeException())
+            return
+        }
+
+        var start = 0;
+        while(true){
+            Thread.sleep(2000)
+            start++
+
+            //todo: get Prothesis status from MQTT
+
+            responseObserver.onNext(Request.ProStatus.newBuilder().setStatus("status " + start).build());
+            println("sending " + start)
+
+        }
         responseObserver.onCompleted()
     }
 }
