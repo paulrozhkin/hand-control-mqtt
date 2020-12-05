@@ -5,6 +5,7 @@ service HandleRequest{
   rpc login(LoginRequest) returns (LoginResponse);
   rpc proRequest(ClientRequest) returns (ClientResponse);
   rpc registry(LoginRequest) returns (LoginResponse);
+  rpc proUpdate(SubscribeRequest) returns (stream ProStatus);
 }
 
 message LoginRequest {
@@ -22,4 +23,12 @@ message ClientRequest {
 
 message ClientResponse {
   string message = 1;
+}
+
+message SubscribeRequest {
+  string message = 1;
+}
+
+message ProStatus {
+  string status = 1;
 }
