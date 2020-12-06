@@ -20,16 +20,16 @@ class DynamicApi {
     @Autowired
     lateinit var commands: List<DynamicCommand>
 
-    fun handle(topicName: String, id: String, payload: ByteArray) {
+    fun handle(topicName: String, id: String, payload: ByteArray) : Boolean {
         val topic = DynamicTopic.getByName(topicName)
         if (topic == null) {
-            val errMsg = String.format("Unknown dynamic mqtt topic: %s.", topicName)
-            logger.error(errMsg)
-            throw IllegalArgumentException(errMsg)
+            logger.debug("Unknown dynamic mqtt topic: {}.", topicName)
+            return false;
         }
 
         val command = commands.find { it.topic == topic }
         command?.handlePayloadAndId(id, payload)
+        return true
     }
 
     enum class DynamicTopic(val topicName: String, val mode: TopicMode) {

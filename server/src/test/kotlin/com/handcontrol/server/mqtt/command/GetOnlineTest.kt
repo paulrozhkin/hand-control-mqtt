@@ -2,8 +2,7 @@ package com.handcontrol.server.mqtt.command
 
 import com.handcontrol.server.cache.ProsthesisCache
 import com.handcontrol.server.mqtt.MqttClientWrapper
-import com.handcontrol.server.mqtt.command.enums.ApiMqttStaticTopic.GET_OFFLINE
-import com.handcontrol.server.mqtt.command.enums.ApiMqttStaticTopic.GET_ONLINE
+import com.handcontrol.server.mqtt.command.enums.StaticApi.StaticTopic
 import com.handcontrol.server.mqtt.command.set.SetSettings
 import com.handcontrol.server.protobuf.Enums.ModeType
 import com.handcontrol.server.protobuf.Settings
@@ -16,7 +15,7 @@ import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.ActiveProfiles
-import java.util.UUID
+import java.util.*
 
 @SpringBootTest
 @ActiveProfiles("dev")
@@ -35,7 +34,7 @@ class GetOnlineTest(@Autowired val mqttWrapper: MqttClientWrapper) {
     @DisplayName("cache has an active entry after publishing to GetOnline and inactive after publishing to GetOffline")
     fun testGetOnlineOffline() {
         val id = UUID.randomUUID().toString()
-        mqttWrapper.publish(GET_ONLINE.topicName, id)
+        mqttWrapper.publish(StaticTopic.GET_ONLINE.topicName, id)
 
         // need to give a publish handler some time
         Thread.sleep(100)
@@ -43,7 +42,7 @@ class GetOnlineTest(@Autowired val mqttWrapper: MqttClientWrapper) {
 
         assertTrue(active!!)
 
-        mqttWrapper.publish(GET_OFFLINE.topicName, id)
+        mqttWrapper.publish(StaticTopic.GET_OFFLINE.topicName, id)
 
         Thread.sleep(100)
         val inactive = ProsthesisCache.getStateById(id)
