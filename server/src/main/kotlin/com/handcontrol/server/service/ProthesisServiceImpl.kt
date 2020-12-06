@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service
 
 @Service
 class ProthesisServiceImpl(val repository: ProthesisRepository) : ProthesisService {
+
     override fun getProthesisById(id: String): Prothesis {
         return repository.findById(id).get()
     }
@@ -27,13 +28,20 @@ class ProthesisServiceImpl(val repository: ProthesisRepository) : ProthesisServi
     }
 
     override fun setOffline(id: String): Prothesis {
-        val prothesis: Prothesis = repository.findById(id).get()
-        prothesis.isOnline = false
-        return repository.save(prothesis)
+        val prosthesis: Prothesis = repository.findById(id).orElseGet { Prothesis.createWith(id) }
+        prosthesis.isOnline = false
+        return repository.save(prosthesis)
+    }
+
+    override fun setOnline(id: String): Prothesis {
+        val prosthesis: Prothesis = repository.findById(id).orElseGet { Prothesis.createWith(id) }
+        prosthesis.isOnline = true
+        return repository.save(prosthesis)
     }
 
     override fun isOnline(id: String): Boolean {
-        return repository.findById(id).get().isOnline
+        val findOpt = repository.findById(id)
+        return findOpt.map { it.isOnline }.orElse(false)
     }
 
     override fun changeProthesis(prothesis: Prothesis, id: String): Prothesis {

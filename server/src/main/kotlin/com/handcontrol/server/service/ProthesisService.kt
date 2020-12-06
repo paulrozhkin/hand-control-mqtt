@@ -1,9 +1,7 @@
 package com.handcontrol.server.service
 
 import com.handcontrol.server.entity.Prothesis
-import org.springframework.stereotype.Service
 
-@Service
 interface ProthesisService {
 
     fun getProthesisById(id: String): Prothesis
@@ -17,6 +15,8 @@ interface ProthesisService {
     fun deleteOffline()
 
     fun setOffline(id: String): Prothesis
+
+    fun setOnline(id: String): Prothesis
 
     fun isOnline(id: String): Boolean
 
