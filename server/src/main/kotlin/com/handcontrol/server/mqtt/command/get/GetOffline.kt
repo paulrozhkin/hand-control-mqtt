@@ -22,7 +22,8 @@ class GetOffline : StaticCommand(StaticApi.StaticTopic.GET_OFFLINE) {
     override fun handlePayload(byteArray: ByteArray) {
         val id = String(byteArray)
         logger.debug("Prosthesis {} is lost the connection", id)
-        svc.setOffline(id)
+        val upd = svc.setOffline(id)
+        logger.trace("Update and save prosthesis state: {}", upd)
         logger.debug("Prosthesis {} is offline", id)
     }
 

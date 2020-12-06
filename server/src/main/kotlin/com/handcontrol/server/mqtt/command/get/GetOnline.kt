@@ -22,7 +22,8 @@ class GetOnline : StaticCommand(StaticApi.StaticTopic.GET_ONLINE) {
 
     override fun handlePayload(byteArray: ByteArray) {
         val id = String(byteArray)
-        svc.setOnline(id)
+        val upd = svc.setOnline(id)
+        logger.info("Update and save prosthesis state: {}", upd)
         logger.debug("Prosthesis {} is online", id)
     }
 

@@ -4,7 +4,7 @@ import com.handcontrol.server.entity.Settings
 import com.handcontrol.server.service.dao.SettingsRepository
 import org.springframework.stereotype.Service
 
-@Service
+//@Service
 class SettingsServiceImpl(val repository: SettingsRepository): SettingsService {
 
     override fun getSettingsById(id: String): Settings {

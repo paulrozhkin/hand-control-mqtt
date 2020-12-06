@@ -1,10 +1,13 @@
 package com.handcontrol.server.service
 
 import com.handcontrol.server.entity.Prothesis
+import com.handcontrol.server.mqtt.command.dto.gesture.GetGesturesDto
+import com.handcontrol.server.mqtt.command.dto.settings.GetSettingsDto
+import java.util.*
 
 interface ProthesisService {
 
-    fun getProthesisById(id: String): Prothesis
+    fun getProthesisById(id: String): Optional<Prothesis>
 
     fun gelAllOnlineProtheses(): List<Prothesis>
 
@@ -21,4 +24,8 @@ interface ProthesisService {
     fun isOnline(id: String): Boolean
 
     fun changeProthesis(prothesis: Prothesis, id: String): Prothesis
+
+    fun updateSettings(id: String, settings: GetSettingsDto): Prothesis
+
+    fun updateGestures(id: String, gestures: GetGesturesDto): Prothesis
 }
