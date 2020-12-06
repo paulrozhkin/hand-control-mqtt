@@ -7,5 +7,5 @@ import org.springframework.data.redis.core.index.Indexed
 @RedisHash("Session")
 data class Session (
         @Id @Indexed val login: String,
-        var prothesis: Prothesis //todo: check if prothesis loads from redis
+        var prothesis: Prothesis? //todo: check if prothesis loads from redis
 )
