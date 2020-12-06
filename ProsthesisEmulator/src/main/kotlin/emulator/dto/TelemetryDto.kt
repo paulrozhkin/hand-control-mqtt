@@ -1,14 +1,14 @@
-package com.handcontrol.server.mqtt.command.dto
+package emulator.dto
 
-import com.handcontrol.server.protobuf.Enums
-import com.handcontrol.server.protobuf.Enums.DriverStatusType
-import com.handcontrol.server.protobuf.Enums.ModuleStatusType
+import emulator.dto.enums.DriverStatusType
+import emulator.dto.enums.ModuleStatusType
 import kotlinx.serialization.Serializable
 
 /**
  * Telemetry information
  */
 @Serializable
+@ExperimentalUnsignedTypes
 data class TelemetryDto(
         val telemetryFrequency: Int = 0,
         val emgStatus: ModuleStatusType = ModuleStatusType.MODULE_STATUS_INITIALIZATION,

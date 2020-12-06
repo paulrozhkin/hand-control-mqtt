@@ -1,7 +1,8 @@
 package com.handcontrol.server.mqtt
 
-import com.handcontrol.server.mqtt.command.enums.ApiMqttDynamicTopic
 import com.handcontrol.server.mqtt.command.enums.ApiMqttStaticTopic
+import com.handcontrol.server.mqtt.command.enums.DynamicApi
+import com.handcontrol.server.mqtt.command.enums.DynamicApi.DynamicTopic
 import com.handcontrol.server.mqtt.command.enums.TopicMode
 import io.netty.handler.codec.mqtt.MqttQoS
 import io.vertx.core.Vertx
@@ -10,13 +11,17 @@ import io.vertx.mqtt.MqttClient
 import io.vertx.mqtt.messages.MqttPublishMessage
 import kotlinx.serialization.ExperimentalSerializationApi
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import javax.annotation.PostConstruct
 
 @Service
 @ExperimentalSerializationApi
-class MqttClientWrapperImpl(private val mqttProps: MqttProperties) : MqttClientWrapper {
+class MqttClientWrapperImpl(val mqttProps: MqttProperties) : MqttClientWrapper {
     private val logger = LoggerFactory.getLogger(MqttClientWrapperImpl::class.java)
+
+    @Autowired
+    lateinit var dynamicApi: DynamicApi
 
     private val client = MqttClient.create(Vertx.vertx())
     private lateinit var clientId: String
@@ -38,16 +43,7 @@ class MqttClientWrapperImpl(private val mqttProps: MqttProperties) : MqttClientW
 
             val id = topicName.substringBefore('/')
             val topicWithRegex = topicName.replaceBefore('/', "+")
-            val dynamicTopic = ApiMqttDynamicTopic.getByName(topicWithRegex)
-            if (dynamicTopic != null) {
-                val contentHandler = dynamicTopic.getContentHandler()
-                contentHandler.invoke(id, content)
-                return@publishHandler
-            }
-
-            val errMsg = String.format("Unknown mqtt topic: %s.", topicName)
-            logger.error(errMsg)
-            throw IllegalArgumentException(errMsg)
+            dynamicApi.handle(topicWithRegex, id, content)
         }
         connect()
     }
@@ -66,7 +62,7 @@ class MqttClientWrapperImpl(private val mqttProps: MqttProperties) : MqttClientW
                         .filter { it.mode == TopicMode.READ }
                         .forEach { subscribe(it.topicName) }
 
-                ApiMqttDynamicTopic.values()
+                DynamicTopic.values()
                         .filter { it.mode == TopicMode.READ }
                         .forEach { subscribe(it.topicName) }
             } else {
