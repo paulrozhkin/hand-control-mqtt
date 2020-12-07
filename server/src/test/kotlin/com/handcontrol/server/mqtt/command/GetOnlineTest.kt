@@ -17,15 +17,18 @@ import com.handcontrol.server.protobuf.Settings
 import com.handcontrol.server.service.ProthesisService
 import com.handcontrol.server.util.ProtobufSerializer
 import kotlinx.serialization.ExperimentalSerializationApi
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.ActiveProfiles
 import java.util.*
+import kotlin.collections.ArrayList
 
 @SpringBootTest
 @ActiveProfiles("dev")
@@ -47,24 +50,34 @@ class GetOnlineTest(@Autowired val mqttWrapper: MqttClientWrapper, @Autowired va
     @Autowired
     lateinit var getOfflineCommand: GetOffline
 
+    private val cachedUuids = mutableListOf<String>()
+
+    @AfterEach
+    fun tearDown() {
+        cachedUuids.forEach { println(prosthesisSvc.getProthesisById(it)) }
+        cachedUuids.asSequence()
+            .onEach { prosthesisSvc.delete(it) }
+        cachedUuids.clear()
+    }
+
     // TODO for mqtt: check correct choice of handlers
 
     @Test
     @DisplayName("redis has an active entry after handling by GetOnline and inactive after handle by GetOffline")
     fun testGetOnlineOffline() {
         val id = UUID.randomUUID().toString()
+        cachedUuids.add(id)
 
         getOnlineCommand.handlePayload(id.toByteArray())
         val active = prosthesisSvc.isOnline(id)
         assertTrue(active)
-
-        mqttWrapper.publish(StaticTopic.GET_OFFLINE.topicName, id)
 
         getOfflineCommand.handlePayload(id.toByteArray())
         val inactive = prosthesisSvc.isOnline(id)
         assertFalse(inactive)
 
         val id2 = UUID.randomUUID().toString()
+        cachedUuids.add(id2)
 
         val inactiveOpt = prosthesisSvc.isOnline(id2)
         assertFalse(inactiveOpt)
@@ -73,7 +86,7 @@ class GetOnlineTest(@Autowired val mqttWrapper: MqttClientWrapper, @Autowired va
     @Test
     fun testGetSettingsSave() {
         val id = UUID.randomUUID().toString()
-        println("Id: $id")
+        cachedUuids.add(id)
 
         val getSettings = GetSettingsDto(
             ModeType.MODE_AUTO, enableEmg = true, enableDisplay = false, enableGyro = false, enableDriver = true
@@ -87,7 +100,7 @@ class GetOnlineTest(@Autowired val mqttWrapper: MqttClientWrapper, @Autowired va
     @Test
     fun testGetGesturesSave() {
         val id = UUID.randomUUID().toString()
-        println("Id: $id")
+        cachedUuids.add(id)
 
         val unixTime = 1605088323L
 
