@@ -1,10 +1,17 @@
 package com.handcontrol.server.grpc
 
 import com.handcontrol.server.entity.Credentials
+import com.handcontrol.server.entity.Session
 import com.handcontrol.server.mqtt.command.MobileWriteApi
+import com.handcontrol.server.mqtt.command.dto.gesture.GestureDto
 import com.handcontrol.server.mqtt.command.set.*
-import com.handcontrol.server.protobuf.*
+import com.handcontrol.server.protobuf.Gestures
+import com.handcontrol.server.protobuf.HandleRequestGrpc
+import com.handcontrol.server.protobuf.Request
+import com.handcontrol.server.protobuf.Settings
 import com.handcontrol.server.repository.CredentialsRepository
+import com.handcontrol.server.service.ProthesisService
+import com.handcontrol.server.service.SessionService
 import io.github.majusko.grpc.jwt.annotation.Allow
 import io.github.majusko.grpc.jwt.service.JwtService
 import io.github.majusko.grpc.jwt.service.dto.JwtData
@@ -15,12 +22,19 @@ import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 
 @GRpcService
-class HandleRequestImpl(private val jwtService: JwtService, private val db: CredentialsRepository) : HandleRequestGrpc.HandleRequestImplBase() {
+class HandleRequestImpl(private val jwtService: JwtService, private val db: CredentialsRepository) :
+    HandleRequestGrpc.HandleRequestImplBase() {
 
     private val logger = LoggerFactory.getLogger(HandleRequestImpl::class.java)
 
     @Autowired
     private lateinit var lst: List<MobileWriteApi<*>>
+
+    @Autowired
+    private lateinit var sessionService: SessionService
+
+    @Autowired
+    private lateinit var prothesisService: ProthesisService
 
     companion object {
         const val USER = "user"
@@ -51,10 +65,17 @@ class HandleRequestImpl(private val jwtService: JwtService, private val db: Cred
         val jwtData = JwtData(request.login, setOf(USER))
         token = jwtService.generate(jwtData)
 
-        //todo add redis
+        kotlin.runCatching {
+            val session = Session(login = request.login, null)
+            sessionService.save(session)
+            logger.info(" Session saved to redis for login ${request.login}")
+        }.onFailure {
+            logger.error(" Error while trying to save session to redis for ${request.login} . Error: $it ")
+        }
+
         val proto = Request.LoginResponse.newBuilder()
-                .setToken(token)
-                .build()
+            .setToken(token)
+            .build()
         responseObserver.onNext(proto)
         responseObserver.onCompleted()
     }
@@ -85,145 +106,153 @@ class HandleRequestImpl(private val jwtService: JwtService, private val db: Cred
         }
         val jwtData = JwtData(log, setOf(USER))
         val token = jwtService.generate(jwtData)
-        //todo add redis
+        kotlin.runCatching {
+            val session = Session(login = request.login, null)
+            sessionService.save(session)
+            logger.info(" Session saved to redis for login ${request.login}")
+        }.onFailure {
+            logger.error(" Error while trying to save session to redis for ${request.login} . Error: $it")
+        }
         val proto = Request.LoginResponse.newBuilder()
-                .setToken(token)
-                .build()
+            .setToken(token)
+            .build()
         responseObserver.onNext(proto)
         responseObserver.onCompleted()
         logger.info("User {} successfully registered", log)
     }
 
     @Allow(roles = [USER])
-    override fun getOnline(request: Request.getOnlineRequest?, responseObserver: StreamObserver<Request.getOnlineResponse>?) {
-        //todo get online prothesis from redis
-        val message = Request.getOnlineResponse.newBuilder().setList(listOf("981283", "1233").toString()).build()
-        responseObserver?.onNext(message)
-        responseObserver?.onCompleted()
+    override fun getOnline(
+        request: Request.getOnlineRequest?,
+        responseObserver: StreamObserver<Request.getOnlineResponse>?
+    ) {
+        kotlin.runCatching {
+            val listOfProtheses = prothesisService.gelAllOnlineProtheses().map { it.id }
+            val message = Request.getOnlineResponse.newBuilder().setList(listOfProtheses.toString()).build()
+            logger.info("Sending list of prothesis")
+            responseObserver?.onNext(message)
+            responseObserver?.onCompleted()
+        }.onFailure {
+            responseObserver?.onError(Status.UNKNOWN.asRuntimeException())
+            logger.error("Error while trying to get list of prothesis. Error: $it")
+        }
     }
 
     @Allow(roles = [USER])
-    override fun setOffline(request: Request.setOfflineRequest?, responseObserver: StreamObserver<Request.setOfflineResponse>?) {
-        //todo redis
+    override fun getSettings(
+        request: Request.getSettingsRequest?,
+        responseObserver: StreamObserver<Request.getSettingsResponse>?
+    ) {
         val id = request?.id
         when {
             id == null -> {
                 responseObserver?.onError(Status.INVALID_ARGUMENT.asRuntimeException())
-                //unsuccessful
-                //todo no such id
-            }
-            id == "error" -> {
-                responseObserver?.onError(Status.CANCELLED.asRuntimeException())
             }
             checkRights(id) -> {
                 responseObserver?.onError(Status.PERMISSION_DENIED.asRuntimeException())
             }
         }
-        val message = Request.setOfflineResponse.newBuilder().build()
-        responseObserver?.onNext(message)
-        responseObserver?.onCompleted()
-    }
-
-    @Allow(roles = [USER])
-    override fun getSettings(request: Request.getSettingsRequest?, responseObserver: StreamObserver<Request.getSettingsResponse>?) {
-        val id = request?.id
-        //todo find settings from redis, handle if no
-        when {
-            id == null -> {
-                responseObserver?.onError(Status.INVALID_ARGUMENT.asRuntimeException())
-            }
-            id == "error" -> {
-                //todo no such id
+        kotlin.runCatching {
+            val prothesis = prothesisService.getProthesisById(id!!)
+            prothesis.ifPresentOrElse({
+                val settingsResponse = Settings.GetSettings.newBuilder()
+                val settings = it.settings
+                settingsResponse.enableDisplay = settings!!.enableDisplay
+                settingsResponse.enableDriver = settings.enableDriver
+                settingsResponse.enableEmg = settings.enableEmg
+                settingsResponse.enableGyro = settings.enableGyro
+                settingsResponse.typeWork = settings.typeWork
+                val message = Request.getSettingsResponse.newBuilder().setSettings(settingsResponse.build()).build()
+                logger.info("Sending setting for $id")
+                responseObserver?.onNext(message)
+                responseObserver?.onCompleted()
+                //todo telemetry?
+            }, {
+                logger.error("No such prothesis $id")
                 responseObserver?.onError(Status.NOT_FOUND.asRuntimeException())
-            }
-            checkRights(id) -> {
-                responseObserver?.onError(Status.PERMISSION_DENIED.asRuntimeException())
-            }
+            })
+        }.onFailure {
+            responseObserver?.onError(Status.UNKNOWN.asRuntimeException())
+            logger.error("Error while trying to get settings from redis for $id . Error: $it")
         }
-        val settings = Settings.GetSettings.newBuilder()
-        settings.enableDisplay = true
-        settings.enableDriver = true
-        settings.enableEmg = true
-        settings.enableGyro = true
-        settings.typeWork = Enums.ModeType.MODE_AUTO
-        val message = Request.getSettingsResponse.newBuilder().setSettings(settings.build()).build()
-        responseObserver?.onNext(message)
-        responseObserver?.onCompleted()
     }
 
     @Allow(roles = [USER])
-    override fun setSettings(request: Request.setSettingsRequest?, responseObserver: StreamObserver<Request.setSettingsResponse>?) {
+    override fun setSettings(
+        request: Request.setSettingsRequest?,
+        responseObserver: StreamObserver<Request.setSettingsResponse>?
+    ) {
         val id = request?.id
         val s = request?.settings
         when {
             id == null || s == null -> {
                 responseObserver?.onError(Status.INVALID_ARGUMENT.asRuntimeException())
             }
-            id == "error" -> {
-                //todo no such id
-                responseObserver?.onError(Status.NOT_FOUND.asRuntimeException())
-            }
             checkRights(id) -> {
                 responseObserver?.onError(Status.PERMISSION_DENIED.asRuntimeException())
             }
         }
-        //todo add mqtt and redis
-        val command = lst.find { it is SetSettings } as MobileWriteApi<Settings.SetSettings>
-        command.writeToProsthesis(id!!, s!!)
-        //todo do we need getSettings?
-        val settings = Settings.GetSettings.newBuilder()
-        settings.enableDisplay = true
-        settings.enableDriver = true
-        settings.enableEmg = true
-        settings.enableGyro = true
-        settings.typeWork = Enums.ModeType.MODE_AUTO
-        val message = Request.setSettingsResponse.newBuilder().setSettings(settings).build()
-        responseObserver?.onNext(message)
-        responseObserver?.onCompleted()
-
+        kotlin.runCatching {
+            val prothesis = prothesisService.getProthesisById(id!!)
+            prothesis.ifPresentOrElse({
+                val command = lst.find { it is SetSettings } as MobileWriteApi<Settings.SetSettings>
+                command.writeToProsthesis(id, s!!)
+                val message = Request.setSettingsResponse.newBuilder().build()
+                logger.info("Set settings fot $id")
+                responseObserver?.onNext(message)
+                responseObserver?.onCompleted()
+            }, {
+                logger.error("No such prothesis $id")
+                responseObserver?.onError(Status.NOT_FOUND.asRuntimeException())
+            })
+        }.onFailure {
+            responseObserver?.onError(Status.UNKNOWN.asRuntimeException())
+            logger.error("Error while trying to set $id . Error: $it")
+        }
     }
 
     @Allow(roles = [USER])
-    override fun getGestures(request: Request.getGesturesRequest?, responseObserver: StreamObserver<Request.getGesturesResponse>?) {
+    override fun getGestures(
+        request: Request.getGesturesRequest?,
+        responseObserver: StreamObserver<Request.getGesturesResponse>?
+    ) {
         val id = request?.id
         when {
             id == null -> {
                 responseObserver?.onError(Status.INVALID_ARGUMENT.asRuntimeException())
             }
-            id == "error" -> {
-                //todo no such id
-                responseObserver?.onError(Status.NOT_FOUND.asRuntimeException())
-            }
             checkRights(id) -> {
                 responseObserver?.onError(Status.PERMISSION_DENIED.asRuntimeException())
             }
         }
-        //todo add redis
-        val uuid = Uuid.UUID.newBuilder()
-        uuid.value = "12345"
-        val gestureAction = Gestures.GestureAction.newBuilder()
-        gestureAction.delay = 1
-        gestureAction.thumbFingerPosition = 1
-        gestureAction.littleFingerPosition = 1
-        gestureAction.ringFingerPosition = 1
-        gestureAction.middleFingerPosition = 1
-        gestureAction.pointerFingerPosition = 1
-        val gesture = Gestures.Gesture.newBuilder()
-        gesture.setId(uuid)
-        gesture.name = "name"
-        gesture.lastTimeSync = 14124
-        gesture.iterable = true
-        gesture.repetitions = 1
-        gesture.addActions(gestureAction)
-        val gestures = Gestures.GetGestures.newBuilder()
-        gestures.addGestures(gesture)
-        val message = Request.getGesturesResponse.newBuilder().setGestures(gestures.build()).build()
-        responseObserver?.onNext(message)
-        responseObserver?.onCompleted()
+        kotlin.runCatching {
+            val prothesis = prothesisService.getProthesisById(id!!)
+            prothesis.ifPresentOrElse({ it ->
+                val gestures = it.gestures!!
+                //this piece of shit is due to different object types
+                val getGesturesBuilder = Gestures.GetGestures.newBuilder()
+                gestures.listGestures.forEach {
+                    getGesturesBuilder.addGestures(GestureDto.createFrom(it))
+                }
+                getGesturesBuilder.lastTimeSync = gestures.lastTimeSync
+                val message = Request.getGesturesResponse.newBuilder().setGestures(getGesturesBuilder.build()).build()
+                responseObserver?.onNext(message)
+                responseObserver?.onCompleted()
+            }, {
+                logger.error("No such prothesis $id")
+                responseObserver?.onError(Status.NOT_FOUND.asRuntimeException())
+            })
+        }.onFailure {
+            responseObserver?.onError(Status.UNKNOWN.asRuntimeException())
+            logger.error("Error while trying to get gestures for $id . Error: $it")
+        }
     }
 
     @Allow(roles = [USER])
-    override fun saveGesture(request: Request.saveGestureRequest?, responseObserver: StreamObserver<Request.saveGestureResponse>?) {
+    override fun saveGesture(
+        request: Request.saveGestureRequest?,
+        responseObserver: StreamObserver<Request.saveGestureResponse>?
+    ) {
         val gesture = request?.gesture
         val id = request?.id
         val time = request?.timeSync
@@ -231,28 +260,37 @@ class HandleRequestImpl(private val jwtService: JwtService, private val db: Cred
             id == null || gesture == null || time == null -> {
                 responseObserver?.onError(Status.INVALID_ARGUMENT.asRuntimeException())
             }
-            id == "error" -> {
-                //todo no such id
-                responseObserver?.onError(Status.NOT_FOUND.asRuntimeException())
-            }
             checkRights(id) -> {
                 responseObserver?.onError(Status.PERMISSION_DENIED.asRuntimeException())
             }
         }
-        val saveGesture = Gestures.SaveGesture.newBuilder()
-        saveGesture.timeSync = time!!
-        saveGesture.gesture = gesture
-        val command = lst.find { it is SaveGesture } as MobileWriteApi<Gestures.SaveGesture>
-        command.writeToProsthesis(id!!, saveGesture.build())
-        //todo add mqtt
-        //todo telemetry
-        val message = Request.saveGestureResponse.newBuilder().build()
-        responseObserver?.onNext(message)
-        responseObserver?.onCompleted()
+        kotlin.runCatching {
+            val prothesis = prothesisService.getProthesisById(id!!)
+            prothesis.ifPresentOrElse({
+                val saveGesture = Gestures.SaveGesture.newBuilder()
+                saveGesture.timeSync = time!!
+                saveGesture.gesture = gesture
+                val command = lst.find { it is SaveGesture } as MobileWriteApi<Gestures.SaveGesture>
+                command.writeToProsthesis(id, saveGesture.build())
+                logger.info("Saved gesture for $id")
+                val message = Request.saveGestureResponse.newBuilder().build()
+                responseObserver?.onNext(message)
+                responseObserver?.onCompleted()
+            }, {
+                logger.error("No such prothesis $id")
+                responseObserver?.onError(Status.NOT_FOUND.asRuntimeException())
+            })
+        }.onFailure {
+            logger.error("Error while trying to save gestures for $id . Error: $it")
+            responseObserver?.onError(Status.UNKNOWN.asRuntimeException())
+        }
     }
 
     @Allow(roles = [USER])
-    override fun deleteGesture(request: Request.deleteGestureRequest?, responseObserver: StreamObserver<Request.deleteGestureResponse>?) {
+    override fun deleteGesture(
+        request: Request.deleteGestureRequest?,
+        responseObserver: StreamObserver<Request.deleteGestureResponse>?
+    ) {
         val id = request?.id
         val gestureId = request?.gestureId
         val time = request?.timeSync
@@ -260,90 +298,112 @@ class HandleRequestImpl(private val jwtService: JwtService, private val db: Cred
             id == null || gestureId == null || time == null -> {
                 responseObserver?.onError(Status.INVALID_ARGUMENT.asRuntimeException())
             }
-            id == "error" -> {
-                //todo no such id
-                responseObserver?.onError(Status.NOT_FOUND.asRuntimeException())
-            }
             checkRights(id) -> {
                 responseObserver?.onError(Status.PERMISSION_DENIED.asRuntimeException())
             }
-            //todo change
-            gestureId == Uuid.UUID.newBuilder().setValue("error").build() -> {
-                responseObserver?.onError(Status.NOT_FOUND.asRuntimeException())
-            }
         }
-        val deleteGesture = Gestures.DeleteGesture.newBuilder()
-        deleteGesture.timeSync = time!!
-        deleteGesture.id = gestureId
-        val command = lst.find { it is DeleteGesture } as MobileWriteApi<Gestures.DeleteGesture>
-        command.writeToProsthesis(id!!, deleteGesture.build())
-
-        //todo add mqtt
-        //todo telemetry
-        val message = Request.deleteGestureResponse.newBuilder().build()
-        responseObserver?.onNext(message)
-        responseObserver?.onCompleted()
+        kotlin.runCatching {
+            val prothesis = prothesisService.getProthesisById(id!!)
+            prothesis.ifPresentOrElse({
+                //todo no such gesture
+                val deleteGesture = Gestures.DeleteGesture.newBuilder()
+                deleteGesture.timeSync = time!!
+                deleteGesture.id = gestureId
+                val command = lst.find { it is DeleteGesture } as MobileWriteApi<Gestures.DeleteGesture>
+                command.writeToProsthesis(id, deleteGesture.build())
+                val message = Request.deleteGestureResponse.newBuilder().build()
+                logger.info("Deleted gesture $gestureId for $id ")
+                responseObserver?.onNext(message)
+                responseObserver?.onCompleted()
+            }, {
+                logger.error("No such prothesis $id")
+                responseObserver?.onError(Status.NOT_FOUND.asRuntimeException())
+            })
+        }.onFailure {
+            logger.error("Error while trying to delete gesture for $id . Gesture id: $gestureId . Error: $it")
+            responseObserver?.onError(Status.UNKNOWN.asRuntimeException())
+        }
     }
 
     @Allow(roles = [USER])
-    override fun performGestureId(request: Request.performGestureIdRequest?, responseObserver: StreamObserver<Request.performGestureIdResponse>?) {
+    override fun performGestureId(
+        request: Request.performGestureIdRequest?,
+        responseObserver: StreamObserver<Request.performGestureIdResponse>?
+    ) {
         val id = request?.id
         val gestureId = request?.gestureId
         when {
             id == null || gestureId == null -> {
                 responseObserver?.onError(Status.INVALID_ARGUMENT.asRuntimeException())
             }
-            id == "error" -> {
-                //todo no such id
-                responseObserver?.onError(Status.NOT_FOUND.asRuntimeException())
-            }
             checkRights(id) -> {
                 responseObserver?.onError(Status.PERMISSION_DENIED.asRuntimeException())
             }
-            //todo change
-            gestureId == Uuid.UUID.newBuilder().setValue("error").build() -> {
-                responseObserver?.onError(Status.NOT_FOUND.asRuntimeException())
-            }
         }
-        val performGestureById = Gestures.PerformGestureById.newBuilder()
-        performGestureById.id = gestureId
-        val command = lst.find { it is PerformGestureById } as MobileWriteApi<Gestures.PerformGestureById>
-        command.writeToProsthesis(id!!, performGestureById.build())
-
-        //todo add mqtt
-        val message = Request.performGestureIdResponse.newBuilder().build()
-        responseObserver?.onNext(message)
-        responseObserver?.onCompleted()
+        kotlin.runCatching {
+            val prothesis = prothesisService.getProthesisById(id!!)
+            prothesis.ifPresentOrElse({
+                //todo check that gesture is present
+                val performGestureById = Gestures.PerformGestureById.newBuilder()
+                performGestureById.id = gestureId
+                val command = lst.find { it is PerformGestureById } as MobileWriteApi<Gestures.PerformGestureById>
+                command.writeToProsthesis(id, performGestureById.build())
+                val message = Request.performGestureIdResponse.newBuilder().build()
+                logger.info(" Performing gesture $gestureId for $id ")
+                responseObserver?.onNext(message)
+                responseObserver?.onCompleted()
+            }, {
+                logger.error("No such prothesis $id")
+                responseObserver?.onError(Status.NOT_FOUND.asRuntimeException())
+            })
+        }.onFailure {
+            logger.error("Error while trying to perform gesture by id for $id . Gesture id: $gestureId . Error: $it")
+            responseObserver?.onError(Status.UNKNOWN.asRuntimeException())
+        }
     }
 
     @Allow(roles = [USER])
-    override fun performGestureRaw(request: Request.performGestureRawRequest?, responseObserver: StreamObserver<Request.performGestureRawResponse>?) {
+    override fun performGestureRaw(
+        request: Request.performGestureRawRequest?,
+        responseObserver: StreamObserver<Request.performGestureRawResponse>?
+    ) {
         val id = request?.id
         val gesture = request?.gesture
         when {
             id == null || gesture == null -> {
                 responseObserver?.onError(Status.INVALID_ARGUMENT.asRuntimeException())
             }
-            id == "error" -> {
-                //todo no such id
-                responseObserver?.onError(Status.NOT_FOUND.asRuntimeException())
-            }
             checkRights(id) -> {
                 responseObserver?.onError(Status.PERMISSION_DENIED.asRuntimeException())
             }
         }
-        val performGestureRaw = Gestures.PerformGestureRaw.newBuilder()
-        performGestureRaw.gesture = gesture
-        val command = lst.find { it is PerformGestureRaw } as MobileWriteApi<Gestures.PerformGestureRaw>
-        command.writeToProsthesis(id!!, performGestureRaw.build())
-        //todo add mqtt
-        val message = Request.performGestureRawResponse.newBuilder().build()
-        responseObserver?.onNext(message)
-        responseObserver?.onCompleted()
+        kotlin.runCatching {
+            val prothesis = prothesisService.getProthesisById(id!!)
+            prothesis.ifPresentOrElse({
+                val performGestureRaw = Gestures.PerformGestureRaw.newBuilder()
+                performGestureRaw.gesture = gesture
+                val command = lst.find { it is PerformGestureRaw } as MobileWriteApi<Gestures.PerformGestureRaw>
+                command.writeToProsthesis(id, performGestureRaw.build())
+                val message = Request.performGestureRawResponse.newBuilder().build()
+                logger.info(" Perform raw gesture for $id ")
+                responseObserver?.onNext(message)
+                responseObserver?.onCompleted()
+            }, {
+                logger.error("No such prothesis $id")
+                responseObserver?.onError(Status.NOT_FOUND.asRuntimeException())
+            })
+        }.onFailure {
+            logger.error("Error while trying to perform gesture by id for $id . Error: $it")
+            responseObserver?.onError(Status.UNKNOWN.asRuntimeException())
+        }
+
     }
 
     @Allow(roles = [USER])
-    override fun setPositions(request: Request.setPositionsRequest?, responseObserver: StreamObserver<Request.setPositionsResponse>?) {
+    override fun setPositions(
+        request: Request.setPositionsRequest?,
+        responseObserver: StreamObserver<Request.setPositionsResponse>?
+    ) {
         val id = request?.id
         val pointerPosition = request?.pointerFingerPosition
         val middlePosition = request?.middleFingerPosition
@@ -358,26 +418,48 @@ class HandleRequestImpl(private val jwtService: JwtService, private val db: Cred
                     || thumbPosition == null -> {
                 responseObserver?.onError(Status.INVALID_ARGUMENT.asRuntimeException())
             }
-            id == "error" -> {
-                //todo no such id
-                responseObserver?.onError(Status.NOT_FOUND.asRuntimeException())
-            }
             checkRights(id) -> {
                 responseObserver?.onError(Status.PERMISSION_DENIED.asRuntimeException())
             }
         }
-        //todo handle mqtt
-        val setPositions = Gestures.SetPositions.newBuilder()
-        setPositions.pointerFingerPosition = pointerPosition!!
-        setPositions.middleFingerPosition = middlePosition!!
-        setPositions.ringFingerPosition = ringPosition!!
-        setPositions.littleFingerPosition = littlePosition!!
-        setPositions.thumbFingerPosition = thumbPosition!!
-        val command = lst.find { it is SetPositions } as MobileWriteApi<Gestures.SetPositions>
-        command.writeToProsthesis(id!!, setPositions.build())
-        val message = Request.setPositionsResponse.newBuilder().build()
-        responseObserver?.onNext(message)
-        responseObserver?.onCompleted()
+        kotlin.runCatching {
+            val prothesis = prothesisService.getProthesisById(id!!)
+            prothesis.ifPresentOrElse({
+                val setPositions = Gestures.SetPositions.newBuilder()
+                setPositions.pointerFingerPosition = pointerPosition!!
+                setPositions.middleFingerPosition = middlePosition!!
+                setPositions.ringFingerPosition = ringPosition!!
+                setPositions.littleFingerPosition = littlePosition!!
+                setPositions.thumbFingerPosition = thumbPosition!!
+                val command = lst.find { it is SetPositions } as MobileWriteApi<Gestures.SetPositions>
+                command.writeToProsthesis(id, setPositions.build())
+                val message = Request.setPositionsResponse.newBuilder().build()
+                logger.info(" Set positions for $id ")
+                responseObserver?.onNext(message)
+                responseObserver?.onCompleted()
+            }, {
+                logger.error("No such prothesis $id")
+                responseObserver?.onError(Status.NOT_FOUND.asRuntimeException())
+            })
+        }.onFailure {
+            logger.error("Error while trying to perform gesture by id for $id . Error: $it")
+            responseObserver?.onError(Status.UNKNOWN.asRuntimeException())
+        }
+    }
+
+    @Allow(roles = [USER])
+    override fun setProthesis(
+        request: Request.setProthesisRequest?,
+        responseObserver: StreamObserver<Request.setProthesisResponse>?
+    ) {
+        kotlin.runCatching {
+            val session = sessionService.getSessionByLogin(request!!.login)
+            session!!.prothesisId = request.id
+            sessionService.save(session)
+        }.onFailure {
+            logger.error("Error while trying to set prothesis ${request?.id} for ${request?.login} . Error: $it")
+            responseObserver?.onError(Status.UNKNOWN.asRuntimeException())
+        }
     }
 
     private fun checkRights(id: String): Boolean {

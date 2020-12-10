@@ -6,7 +6,7 @@ import org.springframework.stereotype.Service
 @Service
 interface SessionService {
 
-    fun getSessionByLogin(login: String): Session
+    fun getSessionByLogin(login: String): Session?
 
     fun getAllSessions(): List<Session>
 
