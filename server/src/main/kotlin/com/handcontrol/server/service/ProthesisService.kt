@@ -1,12 +1,13 @@
 package com.handcontrol.server.service
 
 import com.handcontrol.server.entity.Prothesis
-import org.springframework.stereotype.Service
+import com.handcontrol.server.mqtt.command.dto.gesture.GetGesturesDto
+import com.handcontrol.server.mqtt.command.dto.settings.GetSettingsDto
+import java.util.*
 
-@Service
 interface ProthesisService {
 
-    fun getProthesisById(id: String): Prothesis
+    fun getProthesisById(id: String): Optional<Prothesis>
 
     fun gelAllOnlineProtheses(): List<Prothesis>
 
@@ -18,7 +19,13 @@ interface ProthesisService {
 
     fun setOffline(id: String): Prothesis
 
+    fun setOnline(id: String): Prothesis
+
     fun isOnline(id: String): Boolean
 
     fun changeProthesis(prothesis: Prothesis, id: String): Prothesis
+
+    fun updateSettings(id: String, settings: GetSettingsDto): Prothesis
+
+    fun updateGestures(id: String, gestures: GetGesturesDto): Prothesis
 }

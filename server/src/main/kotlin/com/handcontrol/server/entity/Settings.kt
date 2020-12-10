@@ -4,9 +4,9 @@ import com.handcontrol.server.protobuf.Enums
 import org.springframework.data.annotation.Id
 import org.springframework.data.redis.core.RedisHash
 
-@RedisHash("Settings")
+//@RedisHash("Settings")
 class Settings (
-        @Id val id: String,
+//        @Id val id: String,
         var typeWork: Enums.ModeType,
         var telemetryFrequency: String,
         var enableEmg: Boolean,
