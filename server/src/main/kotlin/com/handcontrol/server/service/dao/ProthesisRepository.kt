@@ -7,7 +7,7 @@ import org.springframework.stereotype.Repository
 @Repository
 interface ProthesisRepository: CrudRepository<Prothesis, String> {
 
-    fun findAllByOnline(isOnline: Boolean): List<Prothesis>
+    fun findAllByIsOnline(isOnline: Boolean): List<Prothesis>
 
     fun deleteAllByOnline(isOnline: Boolean)
 }

@@ -6,7 +6,6 @@ import com.handcontrol.server.mqtt.command.dto.gesture.GestureActionDto
 import com.handcontrol.server.mqtt.command.dto.gesture.GestureDto
 import com.handcontrol.server.mqtt.command.dto.gesture.GetGesturesDto
 import com.handcontrol.server.mqtt.command.dto.settings.GetSettingsDto
-import com.handcontrol.server.mqtt.command.enums.StaticApi.StaticTopic
 import com.handcontrol.server.mqtt.command.get.GetGestures
 import com.handcontrol.server.mqtt.command.get.GetOffline
 import com.handcontrol.server.mqtt.command.get.GetOnline
@@ -21,14 +20,12 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.ActiveProfiles
 import java.util.*
-import kotlin.collections.ArrayList
 
 @SpringBootTest
 @ActiveProfiles("dev")
@@ -71,6 +68,8 @@ class GetOnlineTest(@Autowired val mqttWrapper: MqttClientWrapper, @Autowired va
         getOnlineCommand.handlePayload(id.toByteArray())
         val active = prosthesisSvc.isOnline(id)
         assertTrue(active)
+        val onlineProstheses = prosthesisSvc.getAllOnlineProtheses()
+        assertTrue(onlineProstheses.isNotEmpty())
 
         getOfflineCommand.handlePayload(id.toByteArray())
         val inactive = prosthesisSvc.isOnline(id)
