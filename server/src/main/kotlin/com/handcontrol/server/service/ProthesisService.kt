@@ -9,7 +9,7 @@ interface ProthesisService {
 
     fun getProthesisById(id: String): Optional<Prothesis>
 
-    fun gelAllOnlineProtheses(): List<Prothesis>
+    fun getAllOnlineProtheses(): List<Prothesis>
 
     fun save(prothesis: Prothesis): Prothesis
 

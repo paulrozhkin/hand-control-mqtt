@@ -14,8 +14,8 @@ class ProthesisServiceImpl(val repository: ProthesisRepository) : ProthesisServi
         return repository.findById(id)
     }
 
-    override fun gelAllOnlineProtheses(): List<Prothesis> {
-        return repository.findAllByOnline(true)
+    override fun getAllOnlineProtheses(): List<Prothesis> {
+        return repository.findAllByIsOnline(true)
     }
 
     override fun save(prothesis: Prothesis): Prothesis {

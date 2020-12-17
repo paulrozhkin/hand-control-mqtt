@@ -127,7 +127,7 @@ class HandleRequestImpl(private val jwtService: JwtService, private val db: Cred
         responseObserver: StreamObserver<Request.getOnlineResponse>?
     ) {
         kotlin.runCatching {
-            val listOfProtheses = prothesisService.gelAllOnlineProtheses().map { it.id }
+            val listOfProtheses = prothesisService.getAllOnlineProtheses().map { it.id }
             val message = Request.getOnlineResponse.newBuilder().setList(listOfProtheses.toString()).build()
             logger.info("Sending list of prothesis")
             responseObserver?.onNext(message)
