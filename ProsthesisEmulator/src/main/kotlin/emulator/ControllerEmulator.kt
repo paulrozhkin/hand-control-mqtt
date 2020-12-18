@@ -209,7 +209,9 @@ class ControllerEmulator {
     }
 
     private fun saveGesture(saveGestureDto: SaveGestureDto) {
-        gestures.add(saveGestureDto.gesture)
+        val newGesture = saveGestureDto.gesture
+        gestures.removeIf { gesture -> gesture.id == newGesture.id }
+        gestures.add(newGesture)
         sendGestures()
     }
 
