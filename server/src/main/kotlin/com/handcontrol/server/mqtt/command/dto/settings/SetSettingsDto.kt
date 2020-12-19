@@ -15,6 +15,7 @@ data class SetSettingsDto(
         val enableDisplay: Boolean = false,
         val enableGyro: Boolean = false,
         val enableDriver: Boolean = false,
+        val powerOff: Boolean = false,
 ) {
     companion object {
         fun createFrom(from: Settings.SetSettings): SetSettingsDto {
@@ -24,7 +25,8 @@ data class SetSettingsDto(
                     enableEmg = from.enableEmg,
                     enableDisplay = from.enableDisplay,
                     enableGyro = from.enableGyro,
-                    enableDriver = from.enableDriver
+                    enableDriver = from.enableDriver,
+                    powerOff = from.powerOff,
             )
         }
     }
