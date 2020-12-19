@@ -4,5 +4,6 @@ mvn clean install && scp -r target  handcontrol@paulrozhkin.ru:/home/handcontrol
 
 # run on server:
 # cd emulator
-# java -Dlog4j.configurationFile=log4j2-emulator.xml -jar target/consoleApp-1.0-jar-with-dependencies.jar &
+# java -Dlog4j.configurationFile=log4j2-emulator.xml -jar target/consoleApp-1.0-jar-with-dependencies.jar 1 &
+# 1 - emulators count
 # logs in: emulator/logs/ (set up in log4j2-emulator.xml) 
