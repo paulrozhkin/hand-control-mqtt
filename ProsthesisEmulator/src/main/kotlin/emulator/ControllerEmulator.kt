@@ -220,7 +220,9 @@ class ControllerEmulator {
             stopTelemetry()
             startTelemetry()
 
-            telemetryResetTimer.cancel()
+            if (this::telemetryResetTimer.isInitialized) {
+                telemetryResetTimer.cancel()
+            }
 
             // Reset telemetry every five minutes
             telemetryResetTimer = timer(null, true, 0, TimeUnit.MINUTES.toMillis(5)) {
@@ -236,7 +238,9 @@ class ControllerEmulator {
                 startTelemetry()
             }
         } else {
-            telemetryResetTimer.cancel()
+            if (this::telemetryResetTimer.isInitialized) {
+                telemetryResetTimer.cancel()
+            }
         }
 
         currentSettings = settings
