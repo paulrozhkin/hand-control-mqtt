@@ -5,10 +5,10 @@ import kotlinx.serialization.ExperimentalSerializationApi
 
 @ExperimentalSerializationApi
 @ExperimentalUnsignedTypes
-suspend fun main(): Unit = coroutineScope {
-
+suspend fun main(args : Array<String>): Unit = coroutineScope {
+    val count: Int = args[0].toInt()
     launch {
-        repeat(1) {
+        repeat(count) {
             val controller = ControllerEmulator()
             controller.start()
         }
