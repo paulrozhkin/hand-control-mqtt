@@ -1,5 +1,6 @@
 syntax="proto3";
 package com.handcontrol.server.protobuf;
+
 import "com/handcontrol/server/protobuf/enums.proto";
 import "com/handcontrol/server/protobuf/uuid.proto";
 

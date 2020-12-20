@@ -1,6 +1,6 @@
 package com.handcontrol.server.mqtt.command.dto.settings
 
-import com.handcontrol.server.mqtt.command.dto.enums.ModeType
+import com.handcontrol.server.protobuf.Enums.ModeType
 import kotlinx.serialization.Serializable
 
 /**

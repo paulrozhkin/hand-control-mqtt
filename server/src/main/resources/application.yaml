@@ -21,3 +21,8 @@ redis:
 
 server:
     port: 8081
+
+
+grpc:
+  jwt:
+    expirationSec: 86400 #one day

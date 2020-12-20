@@ -1,66 +1,134 @@
 package com.handcontrol.server.mqtt.command
 
-import com.handcontrol.server.cache.ProsthesisCache
 import com.handcontrol.server.mqtt.MqttClientWrapper
-import com.handcontrol.server.mqtt.command.dto.enums.ModeType
-import com.handcontrol.server.mqtt.command.dto.settings.SetSettingsDto
-import com.handcontrol.server.mqtt.command.enums.ApiMqttDynamicTopic
-import com.handcontrol.server.mqtt.command.enums.ApiMqttStaticTopic.GET_ONLINE
+import com.handcontrol.server.mqtt.command.dto.UuidDto
+import com.handcontrol.server.mqtt.command.dto.gesture.GestureActionDto
+import com.handcontrol.server.mqtt.command.dto.gesture.GestureDto
+import com.handcontrol.server.mqtt.command.dto.gesture.GetGesturesDto
+import com.handcontrol.server.mqtt.command.dto.settings.GetSettingsDto
+import com.handcontrol.server.mqtt.command.get.GetGestures
+import com.handcontrol.server.mqtt.command.get.GetOffline
+import com.handcontrol.server.mqtt.command.get.GetOnline
+import com.handcontrol.server.mqtt.command.get.GetSettings
 import com.handcontrol.server.mqtt.command.set.SetSettings
+import com.handcontrol.server.protobuf.Enums.ModeType
+import com.handcontrol.server.protobuf.Settings
+import com.handcontrol.server.service.ProthesisService
 import com.handcontrol.server.util.ProtobufSerializer
 import kotlinx.serialization.ExperimentalSerializationApi
+import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertDoesNotThrow
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
-import java.util.UUID
+import org.springframework.test.context.ActiveProfiles
+import java.util.*
 
 @SpringBootTest
+@ActiveProfiles("dev")
 @ExperimentalSerializationApi
-class GetOnlineTest(@Autowired val mqttWrapper: MqttClientWrapper) {
+class GetOnlineTest(@Autowired val mqttWrapper: MqttClientWrapper, @Autowired val prosthesisSvc: ProthesisService) {
 
-    @BeforeEach
-    fun setUp() {
-        ProsthesisCache.clear()
+    @Autowired
+    lateinit var getGesturesCommand: GetGestures
+
+    @Autowired
+    lateinit var getSettingsCommand: GetSettings
+
+    @Autowired
+    lateinit var setSettingsCommand: SetSettings
+
+    @Autowired
+    lateinit var getOnlineCommand: GetOnline
+
+    @Autowired
+    lateinit var getOfflineCommand: GetOffline
+
+    private val cachedUuids = mutableListOf<String>()
+
+    @AfterEach
+    fun tearDown() {
+        cachedUuids.forEach { println(prosthesisSvc.getProthesisById(it)) }
+        cachedUuids.asSequence()
+            .onEach { prosthesisSvc.delete(it) }
+        cachedUuids.clear()
     }
 
+    // TODO for mqtt: check correct choice of handlers
+
     @Test
-    @ExperimentalSerializationApi
-    @DisplayName("test that prosthesis cache has an entry after publishing to SetOnline topic")
-    fun testSetOnline() {
+    @DisplayName("redis has an active entry after handling by GetOnline and inactive after handle by GetOffline")
+    fun testGetOnlineOffline() {
         val id = UUID.randomUUID().toString()
-        mqttWrapper.publish(GET_ONLINE.topicName, ProtobufSerializer.serialize(id))
+        cachedUuids.add(id)
 
-        // need to give a publish handler some time
-        Thread.sleep(100)
-        val p = ProsthesisCache.getStateById(id)
+        getOnlineCommand.handlePayload(id.toByteArray())
+        val active = prosthesisSvc.isOnline(id)
+        assertTrue(active)
+        val onlineProstheses = prosthesisSvc.getAllOnlineProtheses()
+        assertTrue(onlineProstheses.isNotEmpty())
 
-        assertTrue(p!!)
+        getOfflineCommand.handlePayload(id.toByteArray())
+        val inactive = prosthesisSvc.isOnline(id)
+        assertFalse(inactive)
+
+        val id2 = UUID.randomUUID().toString()
+        cachedUuids.add(id2)
+
+        val inactiveOpt = prosthesisSvc.isOnline(id2)
+        assertFalse(inactiveOpt)
     }
 
+    @Test
+    fun testGetSettingsSave() {
+        val id = UUID.randomUUID().toString()
+        cachedUuids.add(id)
+
+        val getSettings = GetSettingsDto(
+            ModeType.MODE_AUTO, enableEmg = true, enableDisplay = false, enableGyro = false, enableDriver = true
+        )
+        getSettingsCommand.handlePayloadAndId(id, ProtobufSerializer.serialize(getSettings))
+
+        val prosthesis = prosthesisSvc.getProthesisById(id)
+        assertEquals(getSettings, prosthesis.get().settings)
+    }
 
     @Test
-    @ExperimentalSerializationApi
+    fun testGetGesturesSave() {
+        val id = UUID.randomUUID().toString()
+        cachedUuids.add(id)
+
+        val unixTime = 1605088323L
+
+        val a1 = GestureActionDto(1, 1, 1, 1, 1, 1)
+        val a2 = GestureActionDto(2, 2, 2, 2, 2, 1)
+        val g1 = GestureDto(UuidDto("1"), "name_gesture", 155L, true, 6, listActions = listOf(a1, a2))
+        val g2 = GestureDto(UuidDto("2"), "name_gesture", 155L, true, 6, listActions = listOf(a1, a2))
+        val getGestures = GetGesturesDto(unixTime, listGestures = listOf(g1, g2))
+
+        getGesturesCommand.handlePayloadAndId(id, ProtobufSerializer.serialize(getGestures))
+
+        val prosthesis = prosthesisSvc.getProthesisById(id)
+        assertEquals(getGestures, prosthesis.get().gestures)
+    }
+
+    @Test
     @DisplayName("run correct dynamic topic with write mode")
     fun runCorrectDynamicTopicWithWriteMode() {
         val id = UUID.randomUUID().toString()
-        val settings = SetSettingsDto(
-                ModeType.MODE_MIO, 1,
-                false, false, false, false
-        )
+        val grpcSettings = Settings.SetSettings.newBuilder()
+            .setEnableDisplay(true)
+            .setEnableDriver(false)
+            .setEnableEmg(true)
+            .setEnableGyro(false)
+            .setTelemetryFrequency(55)
+            .setTypeWork(ModeType.MODE_AUTO)
+            .build()
 
-        SetSettings.mqttWrapper = mqttWrapper
-        val topic = ApiMqttDynamicTopic.SET_SETTINGS.topicName.replace("+", id)
-
-
-        assertDoesNotThrow {
-            ApiMqttDynamicTopic.SET_SETTINGS.getContentHandler()
-                .invoke(id, ProtobufSerializer.serialize(settings)) }
+        setSettingsCommand.writeToProsthesis(id, grpcSettings)
+        // todo mock mqttWrpapper and check sending
     }
-
-
-
 }

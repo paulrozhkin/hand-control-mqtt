@@ -1,7 +1,8 @@
 package com.handcontrol.server.mqtt
 
-import com.handcontrol.server.mqtt.command.enums.ApiMqttDynamicTopic
-import com.handcontrol.server.mqtt.command.enums.ApiMqttStaticTopic
+import com.handcontrol.server.mqtt.command.enums.DynamicApi
+import com.handcontrol.server.mqtt.command.enums.DynamicApi.DynamicTopic
+import com.handcontrol.server.mqtt.command.enums.StaticApi
 import com.handcontrol.server.mqtt.command.enums.TopicMode
 import io.netty.handler.codec.mqtt.MqttQoS
 import io.vertx.core.Vertx
@@ -10,13 +11,20 @@ import io.vertx.mqtt.MqttClient
 import io.vertx.mqtt.messages.MqttPublishMessage
 import kotlinx.serialization.ExperimentalSerializationApi
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import javax.annotation.PostConstruct
 
 @Service
 @ExperimentalSerializationApi
-class MqttClientWrapperImpl(private val mqttProps: MqttProperties) : MqttClientWrapper {
+class MqttClientWrapperImpl(val mqttProps: MqttProperties) : MqttClientWrapper {
     private val logger = LoggerFactory.getLogger(MqttClientWrapperImpl::class.java)
+
+    @Autowired
+    lateinit var dynamicApi: DynamicApi
+
+    @Autowired
+    lateinit var staticApi: StaticApi
 
     private val client = MqttClient.create(Vertx.vertx())
     private lateinit var clientId: String
@@ -27,26 +35,19 @@ class MqttClientWrapperImpl(private val mqttProps: MqttProperties) : MqttClientW
         client.publishHandler { s: MqttPublishMessage ->
             val content = s.payload().bytes
             val topicName = s.topicName()
-            logger.info("Client {} received message from topic {}", clientId, topicName)
+            logger.debug("Client {} received message from topic {}", clientId, topicName)
 
-            val staticTopic = ApiMqttStaticTopic.getByName(topicName)
-            if (staticTopic != null) {
-                val contentHandler = staticTopic.getContentHandler()
-                contentHandler.invoke(content)
+            if (staticApi.handle(topicName, content)) {
                 return@publishHandler
             }
 
             val id = topicName.substringBefore('/')
             val topicWithRegex = topicName.replaceBefore('/', "+")
-            val dynamicTopic = ApiMqttDynamicTopic.getByName(topicWithRegex)
-            if (dynamicTopic != null) {
-                val contentHandler = dynamicTopic.getContentHandler()
-                contentHandler.invoke(id, content)
+            if (dynamicApi.handle(topicWithRegex, id, content)) {
                 return@publishHandler
             }
 
-            val errMsg = String.format("Unknown mqtt topic: %s.", topicName)
-            logger.error(errMsg)
+            val errMsg = "Unknown topic"
             throw IllegalArgumentException(errMsg)
         }
         connect()
@@ -62,16 +63,18 @@ class MqttClientWrapperImpl(private val mqttProps: MqttProperties) : MqttClientW
             if (ch.succeeded()) {
                 clientId = client.clientId()
                 logger.info("Client {} connected to a mqtt broker", clientId)
-                ApiMqttStaticTopic.values()
-                        .filter { it.mode == TopicMode.READ }
-                        .forEach { subscribe(it.topicName) }
+                StaticApi.StaticTopic.values()
+                    .filter { it.mode == TopicMode.READ }
+                    .forEach { subscribe(it.topicName) }
 
-                ApiMqttDynamicTopic.values()
-                        .filter { it.mode == TopicMode.READ }
-                        .forEach { subscribe(it.topicName) }
+                DynamicTopic.values()
+                    .filter { it.mode == TopicMode.READ }
+                    .forEach { subscribe(it.topicName) }
             } else {
-                logger.error("Client {} failed to connect to a mqtt broker. Reason: {}",
-                        clientId, ch.cause().message)
+                logger.error(
+                    "Client {} failed to connect to a mqtt broker. Reason: {}",
+                    clientId, ch.cause().message
+                )
             }
         }
     }
@@ -81,8 +84,10 @@ class MqttClientWrapperImpl(private val mqttProps: MqttProperties) : MqttClientW
             if (dh.succeeded()) {
                 logger.info("Client {} disconnected from a mqtt broker", clientId)
             } else {
-                logger.error("Client {} failed to disconnect from a mqtt broker. Reason: {}",
-                        clientId, dh.cause().message)
+                logger.error(
+                    "Client {} failed to disconnect from a mqtt broker. Reason: {}",
+                    clientId, dh.cause().message
+                )
             }
         }
     }
@@ -92,8 +97,10 @@ class MqttClientWrapperImpl(private val mqttProps: MqttProperties) : MqttClientW
             if (sh.succeeded()) {
                 logger.info("Client {} subscribed to topic {}", clientId, topic)
             } else {
-                logger.error("Client {} failed to subscribe to topic: {}. Reason: {}",
-                        clientId, topic, sh.cause().message)
+                logger.error(
+                    "Client {} failed to subscribe to topic: {}. Reason: {}",
+                    clientId, topic, sh.cause().message
+                )
             }
         }
     }
@@ -103,20 +110,26 @@ class MqttClientWrapperImpl(private val mqttProps: MqttProperties) : MqttClientW
             if (sh.succeeded()) {
                 logger.info("Client {} unsubscribed to topic {}", clientId, topic)
             } else {
-                logger.error("Client {} failed to unsubscribe to topic: {}. Reason: {}",
-                        clientId, topic, sh.cause().message)
+                logger.error(
+                    "Client {} failed to unsubscribe to topic: {}. Reason: {}",
+                    clientId, topic, sh.cause().message
+                )
             }
         }
     }
 
     override fun publish(topic: String, msgBytes: ByteArray) {
-        client.publish(topic, Buffer.buffer(msgBytes),
-                MqttQoS.valueOf(mqttProps.qosLevel), false, false) { sh ->
+        client.publish(
+            topic, Buffer.buffer(msgBytes),
+            MqttQoS.valueOf(mqttProps.qosLevel), false, false
+        ) { sh ->
             if (sh.succeeded()) {
                 logger.info("Client {} published msg to topic {}", clientId, topic)
             } else {
-                logger.error("Client {} failed to publish msg to topic: {}. Reason: {}",
-                        clientId, topic, sh.cause().message)
+                logger.error(
+                    "Client {} failed to publish msg to topic: {}. Reason: {}",
+                    clientId, topic, sh.cause().message
+                )
             }
         }
     }
